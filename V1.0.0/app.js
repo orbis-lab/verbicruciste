@@ -1,3 +1,5 @@
+
+
 let COLS = 13;
 let ROWS = 17;
 let currentGridName = "Ma Grille";
@@ -14,6 +16,193 @@ const DIR_OFFSETS = {
   E: { r: 0, c: 1 }
 };
 
+let panzoomInstance = null;
+let scale = 0.8;
+let pointX = 50;
+let pointY = 40;
+let isPanning = false;
+let startX = 0, startY = 0;
+
+let hasMoved = false;
+let clickStartX = 0;
+let clickStartY = 0;
+
+window.init = function () {
+  const startTime = Date.now();
+
+  cells = Array.from({ length: COLS * ROWS }, emptyCell);
+  updateGridDisplay();
+
+  // Appel de la fonction pour le zoom et le déplacement
+  initPanAndZoomGrid();
+
+  // Calcul du temps écoulé pour garantir un minimum de 2 secondes (2000 ms)
+  const elapsedTime = Date.now() - startTime;
+  const remainingTime = Math.max(0, 2000 - elapsedTime);
+
+  setTimeout(() => {
+    const loader = document.getElementById('appLoader');
+    if (loader) {
+      loader.classList.add('fade-out');
+      setTimeout(() => {
+        loader.remove();
+      }, 500); // Correspond au temps de transition CSS (0.5s)
+    }
+  }, remainingTime);
+};
+
+function updateZoomDisplay() {
+      const zoomLevelDisplay = document.getElementById('zoomLevelDisplay');
+      if (zoomLevelDisplay) {
+        zoomLevelDisplay.textContent = `${Math.round(scale * 100)}%`;
+      }
+      
+    }
+
+// Fonction dédiée à la gestion du Pan (glissement) et du Zoom de la grille
+function initPanAndZoomGrid() {
+  const editorContainer = document.querySelector('.editor');
+  const elementEditor = document.querySelector('.grid');
+
+  if (!elementEditor || !editorContainer) return;
+
+  function setTransform() {
+    elementEditor.style.transform = `translate(${pointX}px, ${pointY}px) scale(${scale})`;
+    elementEditor.style.transformOrigin = "0 0";
+    
+
+
+    // --- GESTION DES BOUTONS DU BADGE DE ZOOM ---
+    const zoomInBtn = document.getElementById('zoomInBtn');
+    const zoomOutBtn = document.getElementById('zoomOutBtn');
+
+    if (zoomInBtn && zoomOutBtn) {
+      zoomInBtn.addEventListener('click', () => {
+        const prevScale = scale;
+        scale = Math.min(scale + 0.15, 2.5);
+
+        // Zoom centré sur le milieu de l'éditeur
+        const rect = editorContainer.getBoundingClientRect();
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+
+        pointX = centerX - (centerX - pointX) * (scale / prevScale);
+        pointY = centerY - (centerY - pointY) * (scale / prevScale);
+
+        setTransform();
+      });
+
+      zoomOutBtn.addEventListener('click', () => {
+        const prevScale = scale;
+        scale = Math.max(scale - 0.15, 0.4);
+
+        const rect = editorContainer.getBoundingClientRect();
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+
+        pointX = centerX - (centerX - pointX) * (scale / prevScale);
+        pointY = centerY - (centerY - pointY) * (scale / prevScale);
+
+        setTransform();
+      });
+    }
+
+    updateZoomDisplay()
+  }
+
+  // --- CENTRAGE GÉOMÉTRIQUE PARFAIT DU MILIEU DE LA GRILLE ---
+  const containerRect = editorContainer.getBoundingClientRect();
+
+  // Récupération de la taille d'une cellule depuis le CSS
+  const computedCellSize = parseFloat(getComputedStyle(elementEditor).getPropertyValue('--cell')) || 54;
+
+  const gridPixelWidth = COLS * computedCellSize;
+  const gridPixelHeight = ROWS * computedCellSize;
+
+  // Formule exacte : (Taille Conteneur - (Taille Grille * Échelle)) / 2
+  pointX = (containerRect.width - (gridPixelWidth * scale)) / 2;
+  pointY = (containerRect.height - (gridPixelHeight * scale)) / 2;
+
+  // Sécurité pour s'assurer qu'on ne part pas dans des valeurs négatives si la grille est plus grande que l'écran
+  pointX = Math.max(10, pointX);
+  pointY = Math.max(10, pointY);
+
+  // Application immédiate
+  setTransform();
+
+  // Gestion du zoom à la molette
+  editorContainer.addEventListener('wheel', (event) => {
+    event.preventDefault();
+
+    const zoomIntensity = 0.1;
+    const prevScale = scale;
+
+    if (event.deltaY < 0) {
+      scale = Math.min(scale + zoomIntensity, 2.5);
+    } else {
+      scale = Math.max(scale - zoomIntensity, 0.4);
+    }
+
+    const rect = editorContainer.getBoundingClientRect();
+    const mouseX = event.clientX - rect.left;
+    const mouseY = event.clientY - rect.top;
+
+    pointX = mouseX - (mouseX - pointX) * (scale / prevScale);
+    pointY = mouseY - (mouseY - pointY) * (scale / prevScale);
+
+    setTransform();
+  });
+
+  // Début du clic (partout, même sur les cases)
+  editorContainer.addEventListener('mousedown', (event) => {
+    isPanning = true;
+    hasMoved = false;
+    startX = event.clientX - pointX;
+    startY = event.clientY - pointY;
+    clickStartX = event.clientX;
+    clickStartY = event.clientY;
+    editorContainer.style.cursor = 'grabbing';
+  });
+
+  // Pendant le mouvement de la souris
+  window.addEventListener('mousemove', (event) => {
+    if (!isPanning) return;
+
+    const moveDistance = Math.hypot(event.clientX - clickStartX, event.clientY - clickStartY);
+
+    if (moveDistance > 5) {
+      hasMoved = true;
+    }
+
+    if (hasMoved) {
+      pointX = event.clientX - startX;
+      pointY = event.clientY - startY;
+      setTransform();
+    }
+  });
+
+  // Relâchement du clic
+  window.addEventListener('mouseup', () => {
+    if (isPanning) {
+      isPanning = false;
+      if (editorContainer) editorContainer.style.cursor = 'default';
+    }
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  window.init();
+});
+// S'assure de lancer l'initialisation au chargement de la page
+window.addEventListener('DOMContentLoaded', () => {
+  window.init();
+});
+
+// S'assure de lancer l'initialisation au chargement de la page
+window.addEventListener('DOMContentLoaded', () => {
+  window.init();
+});
+
 function emptyCell() {
   return {
     type: "letter", letter: "", definition: "", arrow: "E",
@@ -22,10 +211,6 @@ function emptyCell() {
   };
 }
 
-function init() {
-  cells = Array.from({length: COLS * ROWS}, emptyCell);
-  updateGridDisplay();
-}
 
 function selectCellSilently(index) {
   const grid = document.getElementById("grid");
@@ -89,11 +274,11 @@ function updateGridDisplay() {
   document.getElementById('gridNameDisplay').textContent = currentGridName;
   document.getElementById('printTitle').textContent = currentGridName;
   document.getElementById('gridDimensionsDisplay').textContent = `Grille de ${COLS} colonnes × ${ROWS} lignes`;
-  
+
   const grid = document.getElementById("grid");
   grid.style.gridTemplateColumns = `repeat(${COLS}, var(--cell))`;
   grid.style.gridTemplateRows = `repeat(${ROWS}, var(--cell))`;
-  
+
   render();
 }
 
@@ -107,7 +292,7 @@ function render() {
   cells.forEach((cell, index) => {
     const el = document.createElement("div");
     el.className = "cell " + cell.type + "-cell";
-    
+
     // Gestion dynamique des bordures
     if ((index + 1) % COLS === 0) el.style.borderRight = "0";
     if (index >= COLS * (ROWS - 1)) el.style.borderBottom = "0";
@@ -270,7 +455,7 @@ function getHighlightedCells() {
     activeWordTarget = { direction: cell.arrow, indexes: data.indexes };
     return data.indexes;
   }
-  
+
   if (cell.type === "double") {
     const topIdx = getWordData(selected, "E").indexes; const botIdx = getWordData(selected, "S").indexes;
     const all = Array.from(new Set([...topIdx, ...botIdx]));
@@ -407,11 +592,11 @@ function renderWordBox(container, labelText, word, indexes, idPrefix, dir) {
   const labelSpan = document.createElement("span"); labelSpan.textContent = `${labelText} (${word.length} lettres)`; titleDiv.appendChild(labelSpan);
   if (dir) { const iconSpan = document.createElement("span"); iconSpan.className = "material-symbols-outlined"; iconSpan.style.fontSize = "16px"; iconSpan.textContent = dir === "E" ? "arrow_right_alt" : "south"; titleDiv.appendChild(iconSpan); }
 
-  if (labelText === "Mot formé" || labelText === "Mot associé") {
+  if (labelText === "Mot formé" || labelText === "Mot associé" || labelText === "Mot du haut" || labelText === "Mot du bas") {
     const badge = document.createElement("span");
     badge.className = "unstable-api-badge";
     badge.title = "Fonctionnalités en cours de fiabilisation : les appels API de cet encart (correction, suggestions, définition, synonymes) peuvent être instables.";
-    badge.innerHTML = `<span class="material-symbols-outlined">construction</span>`;
+    badge.innerHTML = `<span>bêta</span>&nbsp<span class="material-symbols-outlined">construction</span>`;
     titleDiv.appendChild(badge);
   }
 
@@ -420,53 +605,53 @@ function renderWordBox(container, labelText, word, indexes, idPrefix, dir) {
   const displayDiv = document.createElement("div"); displayDiv.className = "word-display"; displayDiv.textContent = word; box.appendChild(displayDiv);
 
   // --- BOUTON 1 : CORRECTION ORTHOGRAPHIQUE ---
-  const correctBtn = document.createElement("button"); 
-  correctBtn.className = "word-action-btn"; 
-  correctBtn.innerHTML = `<span class="material-symbols-outlined">spellcheck</span> Corriger l'orthographe`; 
-  correctBtn.onclick = () => fetchSpellCorrection(word, indexes, `${idPrefix}-correct`); 
+  const correctBtn = document.createElement("button");
+  correctBtn.className = "word-action-btn";
+  correctBtn.innerHTML = `<span class="material-symbols-outlined">spellcheck</span> Corriger l'orthographe`;
+  correctBtn.onclick = () => fetchSpellCorrection(word, indexes, `${idPrefix}-correct`);
   box.appendChild(correctBtn);
-  
-  const correctList = document.createElement("div"); 
-  correctList.id = `${idPrefix}-correct`; 
-  correctList.className = "suggestions-list"; 
+
+  const correctList = document.createElement("div");
+  correctList.id = `${idPrefix}-correct`;
+  correctList.className = "suggestions-list";
   box.appendChild(correctList);
 
   // --- BOUTON 2 : SUGGESTION PAR MOTIF (Mêmes lettres / même position) ---
-  const sugBtn = document.createElement("button"); 
-  sugBtn.className = "word-action-btn"; 
-  sugBtn.innerHTML = `<span class="material-symbols-outlined">list_alt</span> Suggérer (Même motif)`; 
-  sugBtn.onclick = () => fetchPatternSuggestions(word, indexes, `${idPrefix}-sug`); 
+  const sugBtn = document.createElement("button");
+  sugBtn.className = "word-action-btn";
+  sugBtn.innerHTML = `<span class="material-symbols-outlined">list_alt</span> Suggérer (Même motif)`;
+  sugBtn.onclick = () => fetchPatternSuggestions(word, indexes, `${idPrefix}-sug`);
   box.appendChild(sugBtn);
-  
-  const sugList = document.createElement("div"); 
-  sugList.id = `${idPrefix}-sug`; 
-  sugList.className = "suggestions-list"; 
+
+  const sugList = document.createElement("div");
+  sugList.id = `${idPrefix}-sug`;
+  sugList.className = "suggestions-list";
   box.appendChild(sugList);
 
   // --- BOUTON DÉFINITION WIKTIONNAIRE ---
-  const defBtn = document.createElement("button"); 
-  defBtn.className = "word-action-btn"; 
-  defBtn.innerHTML = `<span class="material-symbols-outlined">menu_book</span> Définition (Wiktionnaire)`; 
-  defBtn.onclick = () => fetchWordDefinition(word, `${idPrefix}-def`); 
+  const defBtn = document.createElement("button");
+  defBtn.className = "word-action-btn";
+  defBtn.innerHTML = `<span class="material-symbols-outlined">menu_book</span> Définition (Wiktionnaire)`;
+  defBtn.onclick = () => fetchWordDefinition(word, `${idPrefix}-def`);
   box.appendChild(defBtn);
-  
-  const defBox = document.createElement("div"); 
-  defBox.id = `${idPrefix}-def`; 
-  defBox.className = "dict-def-box"; 
-  defBox.style.display = "none"; 
+
+  const defBox = document.createElement("div");
+  defBox.id = `${idPrefix}-def`;
+  defBox.className = "dict-def-box";
+  defBox.style.display = "none";
   box.appendChild(defBox);
 
   // --- BOUTON : SYNONYMES ---
-  const synBtn = document.createElement("button"); 
-  synBtn.className = "word-action-btn"; 
-  synBtn.innerHTML = `<span class="material-symbols-outlined">sync_alt</span> Synonymes`; 
-  synBtn.onclick = () => fetchSynonyms(word, `${idPrefix}-syn`); 
+  const synBtn = document.createElement("button");
+  synBtn.className = "word-action-btn";
+  synBtn.innerHTML = `<span class="material-symbols-outlined">sync_alt</span> Synonymes`;
+  synBtn.onclick = () => fetchSynonyms(word, `${idPrefix}-syn`);
   box.appendChild(synBtn);
-  
-  const synBox = document.createElement("div"); 
-  synBox.id = `${idPrefix}-syn`; 
-  synBox.className = "dict-def-box"; 
-  synBox.style.display = "none"; 
+
+  const synBox = document.createElement("div");
+  synBox.id = `${idPrefix}-syn`;
+  synBox.className = "dict-def-box";
+  synBox.style.display = "none";
   box.appendChild(synBox);
 
   container.appendChild(box);
@@ -474,10 +659,10 @@ function renderWordBox(container, labelText, word, indexes, idPrefix, dir) {
 
 // A. CORRECTION ORTHOGRAPHIQUE : Propose le mot le plus probable (gestion des fautes de frappe)
 async function fetchSpellCorrection(word, indexes, resultContainerId) {
-  const container = document.getElementById(resultContainerId); 
+  const container = document.getElementById(resultContainerId);
   if (!container) return;
   container.innerHTML = "<span style='font-size:11px;color:#666'>Recherche de correction...</span>";
-  
+
   const cleanWord = word.replace(/_/g, "").trim().toLowerCase();
   if (cleanWord.length < 2) {
     container.innerHTML = "<span style='font-size:11px;color:#888'>Mot trop court pour être corrigé.</span>";
@@ -493,7 +678,7 @@ async function fetchSpellCorrection(word, indexes, resultContainerId) {
     const suggestions = data[1] || [];
 
     container.innerHTML = "";
-    
+
     // Filtrer pour garder uniquement les mots alphabétiques valides de la même longueur
     const validCorrections = suggestions.filter(w => /^[a-zA-Zà-ÿÀ-Ÿ-]+$/.test(w) && w.length === indexes.length);
 
@@ -518,10 +703,10 @@ async function fetchSpellCorrection(word, indexes, resultContainerId) {
 }
 
 async function fetchSynonyms(word, resultContainerId) {
-  const container = document.getElementById(resultContainerId); 
+  const container = document.getElementById(resultContainerId);
   if (!container) return;
   container.innerHTML = "<span style='font-size:11px;color:#666'>Recherche de synonymes...</span>";
-  
+
   const cleanWord = word.trim().toLowerCase();
   if (cleanWord.length < 2) {
     container.innerHTML = "<span style='font-size:11px;color:#888'>Mot trop court.</span>";
@@ -531,7 +716,7 @@ async function fetchSynonyms(word, resultContainerId) {
   try {
     // On interroge directement l'API parse pour obtenir le HTML ou le texte structuré de la page du mot
     const apiUrl = `https://fr.wiktionary.org/w/api.php?action=parse&page=${encodeURIComponent(cleanWord)}&prop=text&format=json&origin=*`;
-    
+
     const res = await fetch(apiUrl);
     if (!res.ok) throw new Error(`Erreur HTTP: ${res.status}`);
 
@@ -554,7 +739,7 @@ async function fetchSynonyms(word, resultContainerId) {
     // Sur le Wiktionnaire, les synonymes sont généralement dans une section 
     // ou une liste liée à la classe "synonyms" ou après un titre "Synonymes"
     // Approche robuste : chercher les éléments de listes situés après un titre ou dans un bloc de synonymes
-    const synonymHeadings = Array.from(doc.querySelectorAll('h3, h4, h5')).filter(h => 
+    const synonymHeadings = Array.from(doc.querySelectorAll('h3, h4, h5')).filter(h =>
       h.textContent.toLowerCase().includes('synonyme')
     );
 
@@ -598,13 +783,13 @@ async function fetchSynonyms(word, resultContainerId) {
       const tag = document.createElement("span");
       tag.className = "suggestion-tag";
       const wUpper = item.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      
+
       tag.textContent = wUpper;
       tag.onclick = () => {
         console.log("Synonyme sélectionné :", wUpper);
         // fillWordInGrid(wUpper);
       };
-      
+
       container.appendChild(tag);
     });
 
@@ -616,21 +801,21 @@ async function fetchSynonyms(word, resultContainerId) {
 
 // B. SUGGESTION PAR MOTIF : Respecte strictemebt les lettres aux mêmes positions et la longueur
 async function fetchPatternSuggestions(word, indexes, resultContainerId) {
-  const container = document.getElementById(resultContainerId); 
+  const container = document.getElementById(resultContainerId);
   if (!container) return;
   container.innerHTML = "<span style='font-size:11px;color:#666'>Recherche des mots correspondants...</span>";
-  
+
   const cleanWord = word.trim().toLowerCase();
 
   try {
     const regexPattern = "^" + cleanWord.replace(/[_?]/g, ".") + "$";
     // Augmentation de la limite à 50 pour avoir un plus large bassin avant le filtre strict
     const searchUrl = `https://fr.wiktionary.org/w/api.php?action=query&list=search&srsearch=intitle:/${encodeURIComponent(regexPattern)}/&srnamespace=0&srlimit=50&format=json&origin=*`;
-    
+
     const res = await fetch(searchUrl);
     if (!res.ok) throw new Error(`Erreur HTTP: ${res.status}`);
     const data = await res.json();
-    
+
     const searchResults = data?.query?.search || [];
     const suggestions = searchResults.map(item => item.title);
 
@@ -663,15 +848,15 @@ async function fetchPatternSuggestions(word, indexes, resultContainerId) {
   }
 }
 async function fetchWordDefinition(word, resultContainerId) {
-  const container = document.getElementById(resultContainerId); 
-  if (!container) return; 
+  const container = document.getElementById(resultContainerId);
+  if (!container) return;
   container.style.display = "block";
-  
-  if (word.includes("_")) { 
-    container.innerHTML = "<span style='color:#888;'>Veuillez compléter toutes les lettres.</span>"; 
-    return; 
+
+  if (word.includes("_")) {
+    container.innerHTML = "<span style='color:#888;'>Veuillez compléter toutes les lettres.</span>";
+    return;
   }
-  
+
   container.innerHTML = "<span style='color:#666;'>Recherche sur le Wiktionnaire...</span>";
   const cleanWord = word.trim().toLowerCase();
 
@@ -680,7 +865,7 @@ async function fetchWordDefinition(word, resultContainerId) {
     const apiUrl = `https://fr.wiktionary.org/w/api.php?action=parse&page=${encodeURIComponent(cleanWord)}&prop=text&format=json&origin=*`;
     const res = await fetch(apiUrl);
     if (!res.ok) throw new Error(`Erreur HTTP: ${res.status}`);
-    
+
     const data = await res.json();
     const htmlContent = data?.parse?.text?.["*"];
 
@@ -692,10 +877,10 @@ async function fetchWordDefinition(word, resultContainerId) {
     // Analyse du HTML reçu via un DOMParser temporaire
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlContent, 'text/html');
-    
+
     // Le Wiktionnaire place généralement les définitions dans des listes à puces (<li>) après les titres de section de langue française
     const items = doc.querySelectorAll('.mw-parser-output > ol > li, .mw-parser-output > p + ol > li, .mw-parser-output dl dd');
-    
+
     let definitions = [];
     items.forEach(li => {
       // Nettoyage du texte (suppression des liens internes superflus, prononciations, etc.)
@@ -707,19 +892,19 @@ async function fetchWordDefinition(word, resultContainerId) {
 
     if (definitions.length > 0) {
       let html = `<strong>${word.toUpperCase()}</strong> (Wiktionnaire) :<ul style="margin:4px 0 0 14px; padding:0;">`;
-      definitions.slice(0, 3).forEach(d => { 
+      definitions.slice(0, 3).forEach(d => {
         // Tronquer si la définition est trop longue pour l'interface
         const cleanDef = d.length > 120 ? d.substring(0, 120) + '...' : d;
-        html += `<li>${cleanDef}</li>`; 
-      }); 
-      html += `</ul>`; 
+        html += `<li>${cleanDef}</li>`;
+      });
+      html += `</ul>`;
       container.innerHTML = html;
     } else {
       container.innerHTML = "<span style='color:#888;'>Définition non disponible pour ce mot.</span>";
     }
-  } catch (e) { 
-    console.error(e); 
-    container.innerHTML = "<span style='color:#888;'>Impossible d'accéder au Wiktionnaire.</span>"; 
+  } catch (e) {
+    console.error(e);
+    container.innerHTML = "<span style='color:#888;'>Impossible d'accéder au Wiktionnaire.</span>";
   }
 }
 function fillWordInGrid(word, indexes) { for (let i = 0; i < indexes.length; i++) { if (i < word.length) cells[indexes[i]].letter = word[i]; } render(); }
@@ -729,7 +914,7 @@ function setArrow(direction) { if (selected !== null && cells[selected].type ===
 function updateHalfDefinition(which, value) { if (selected !== null && cells[selected].type === "double") { cells[selected][which].definition = value.toUpperCase(); const grid = document.getElementById("grid"); if (grid.children[selected]) { const editables = grid.children[selected].querySelectorAll(".def-editable"); const idx = which === "top" ? 0 : 1; if (editables[idx] && editables[idx] !== document.activeElement) editables[idx].innerText = cells[selected][which].definition; } } }
 
 function clearCell() { if (selected === null) return; cells[selected] = emptyCell(); render(); }
-function clearGrid() { if (confirm("Vider toute la grille ?")) { cells = Array.from({length: COLS * ROWS}, emptyCell); selected = null; render(); } }
+function clearGrid() { if (confirm("Vider toute la grille ?")) { cells = Array.from({ length: COLS * ROWS }, emptyCell); selected = null; render(); } }
 
 function newGrid() { openSettingsModal(true); }
 
@@ -752,7 +937,7 @@ function applySettings() {
 
   if (isCreatingNewGrid) {
     currentGridName = newName; COLS = newCols; ROWS = newRows;
-    cells = Array.from({length: COLS * ROWS}, emptyCell);
+    cells = Array.from({ length: COLS * ROWS }, emptyCell);
     selected = null;
   } else {
     // Si le nom a changé, mettre à jour l'entrée existante dans localStorage si elle y figurait
@@ -766,7 +951,7 @@ function applySettings() {
     }
 
     if (newCols !== COLS || newRows !== ROWS) {
-      const newCells = Array.from({length: newCols * newRows}, emptyCell);
+      const newCells = Array.from({ length: newCols * newRows }, emptyCell);
       for (let r = 0; r < Math.min(ROWS, newRows); r++) {
         for (let c = 0; c < Math.min(COLS, newCols); c++) {
           newCells[r * newCols + c] = cells[r * COLS + c];
@@ -774,7 +959,7 @@ function applySettings() {
       }
       cells = newCells; COLS = newCols; ROWS = newRows; selected = null;
     }
-    
+
     // Sauvegarder automatiquement les changements mis à jour
     if (savedGrids[currentGridName] || Object.keys(savedGrids).length > 0) {
       savedGrids[currentGridName] = { version: 2, cols: COLS, rows: ROWS, cells: cells };
@@ -888,7 +1073,7 @@ function importJSON(event) {
   const file = event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = function(e) {
+  reader.onload = function (e) {
     try {
       const data = JSON.parse(e.target.result);
       if (data.cells) {
@@ -908,3 +1093,4 @@ function importJSON(event) {
   };
   reader.readAsText(file);
 }
+
