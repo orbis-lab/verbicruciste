@@ -222,6 +222,9 @@
 
   .word-box { background: #eef5ff; border: 1px solid #70a5ff; border-radius: 6px; padding: 10px; margin-top: 10px; }
   .word-title { font-size: 11px; text-transform: uppercase; color: #444; font-weight: bold; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+
+  .unstable-api-badge { display: inline-flex; align-items: center; justify-content: center; margin-left: auto; width: 20px; height: 20px; border-radius: 50%; background: #fff3cd; color: #986f00; cursor: help; }
+  .unstable-api-badge .material-symbols-outlined { font-size: 14px; }
   .word-display { font-size: 20px; font-weight: bold; letter-spacing: 3px; color: #111; word-break: break-all; }
   .word-action-btn { margin-top: 8px; width: 100%; font-size: 11px; padding: 6px 8px; border: 1px solid #bbb; background: #fafafa; border-radius: 5px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit; font-weight: 600; }
   .word-action-btn:hover { background: #e4eeff; border-color: #70a5ff; color: #1166dd; }
@@ -255,6 +258,12 @@
   .form-group input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; }
   .btn-primary { background: #2583ff; color: white; padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 14px; }
   .btn-primary:hover { background: #1166dd; }
+
+  .save-choice-intro { margin: 0 0 12px; color: #555; font-size: 13px; }
+  .save-choice-row { display: flex; gap: 10px; }
+  .btn-save-choice { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 16px 10px; border: 1px solid #ccddee; background: #f5f9ff; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px; color: #1166dd; transition: all 0.15s ease; }
+  .btn-save-choice .material-symbols-outlined { font-size: 26px; }
+  .btn-save-choice:hover { background: #2583ff; color: white; border-color: #2583ff; }
 
   .import-json-btn { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; background: #eaf3ff; border: 1px dashed #2583ff; color: #1166dd; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; margin-bottom: 12px; transition: all 0.15s ease; }
   .import-json-btn:hover { background: #d0e3ff; }

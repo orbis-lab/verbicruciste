@@ -406,6 +406,15 @@ function renderWordBox(container, labelText, word, indexes, idPrefix, dir) {
   const titleDiv = document.createElement("div"); titleDiv.className = "word-title";
   const labelSpan = document.createElement("span"); labelSpan.textContent = `${labelText} (${word.length} lettres)`; titleDiv.appendChild(labelSpan);
   if (dir) { const iconSpan = document.createElement("span"); iconSpan.className = "material-symbols-outlined"; iconSpan.style.fontSize = "16px"; iconSpan.textContent = dir === "E" ? "arrow_right_alt" : "south"; titleDiv.appendChild(iconSpan); }
+
+  if (labelText === "Mot formé" || labelText === "Mot associé") {
+    const badge = document.createElement("span");
+    badge.className = "unstable-api-badge";
+    badge.title = "Fonctionnalités en cours de fiabilisation : les appels API de cet encart (correction, suggestions, définition, synonymes) peuvent être instables.";
+    badge.innerHTML = `<span class="material-symbols-outlined">construction</span>`;
+    titleDiv.appendChild(badge);
+  }
+
   box.appendChild(titleDiv);
 
   const displayDiv = document.createElement("div"); displayDiv.className = "word-display"; displayDiv.textContent = word; box.appendChild(displayDiv);
@@ -778,39 +787,55 @@ function applySettings() {
 
 function getSavedGrids() { const data = localStorage.getItem("motsFlechesGrids"); return data ? JSON.parse(data) : {}; }
 
-function saveGrid() {
-  const savedGrids = getSavedGrids();
-  savedGrids[currentGridName] = { version: 2, cols: COLS, rows: ROWS, cells: cells };
-  localStorage.setItem("motsFlechesGrids", JSON.stringify(savedGrids));
-  alert(`Grille "${currentGridName}" sauvegardée.`);
+let isSaveAsMode = false;
+
+function openSaveModal(isSaveAs) {
+  isSaveAsMode = isSaveAs;
+  document.getElementById("saveModalTitle").textContent = isSaveAs ? "Enregistrer la grille sous..." : "Enregistrer la grille";
+  document.getElementById("saveAsNameGroup").style.display = isSaveAs ? "block" : "none";
+  if (isSaveAs) document.getElementById("saveAsNameInput").value = currentGridName + " (Copie)";
+  document.getElementById("saveModal").classList.add("active");
 }
 
-function openSaveAsModal() {
-  document.getElementById("saveAsNameInput").value = currentGridName + " (Copie)";
-  document.getElementById("saveAsModal").classList.add("active");
+function closeSaveModal() {
+  document.getElementById("saveModal").classList.remove("active");
 }
 
-function closeSaveAsModal() {
-  document.getElementById("saveAsModal").classList.remove("active");
+function closeSaveModalOnOverlay(event) {
+  if (event.target.id === "saveModal") closeSaveModal();
 }
 
-function closeSaveAsModalOnOverlay(event) {
-  if (event.target.id === "saveAsModal") closeSaveAsModal();
-}
+function confirmSave(destination) {
+  let targetName = currentGridName;
 
-function confirmSaveAs() {
-  const newName = document.getElementById("saveAsNameInput").value.trim();
-  if (!newName) {
-    alert("Veuillez entrer un nom valide.");
-    return;
+  if (isSaveAsMode) {
+    const newName = document.getElementById("saveAsNameInput").value.trim();
+    if (!newName) {
+      alert("Veuillez entrer un nom valide.");
+      return;
+    }
+    targetName = newName;
   }
-  currentGridName = newName;
-  const savedGrids = getSavedGrids();
-  savedGrids[currentGridName] = { version: 2, cols: COLS, rows: ROWS, cells: cells };
-  localStorage.setItem("motsFlechesGrids", JSON.stringify(savedGrids));
-  updateGridDisplay();
-  closeSaveAsModal();
-  alert(`Grille enregistrée sous "${currentGridName}".`);
+
+  currentGridName = targetName;
+
+  if (destination === "browser") {
+    const savedGrids = getSavedGrids();
+    savedGrids[currentGridName] = { version: 2, cols: COLS, rows: ROWS, cells: cells };
+    localStorage.setItem("motsFlechesGrids", JSON.stringify(savedGrids));
+    updateGridDisplay();
+    closeSaveModal();
+    alert(`Grille "${currentGridName}" enregistrée dans le navigateur.`);
+  } else if (destination === "file") {
+    const exportData = { version: 2, name: currentGridName, cols: COLS, rows: ROWS, cells: cells };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${currentGridName.replace(/\s+/g, "_")}.json`;
+    a.click();
+    updateGridDisplay();
+    closeSaveModal();
+  }
 }
 
 function openLoadModal() {
@@ -857,15 +882,6 @@ function deleteSavedGrid(name) {
     const savedGrids = getSavedGrids(); delete savedGrids[name];
     localStorage.setItem("motsFlechesGrids", JSON.stringify(savedGrids)); openLoadModal();
   }
-}
-
-function exportJSON() {
-  const exportData = { version: 2, name: currentGridName, cols: COLS, rows: ROWS, cells: cells };
-  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `${currentGridName.replace(/\s+/g, "_")}.json`;
-  a.click();
 }
 
 function importJSON(event) {

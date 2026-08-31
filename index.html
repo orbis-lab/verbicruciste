@@ -23,14 +23,11 @@
       <button class="icon-btn" onclick="openLoadModal()" data-tooltip="Ouvrir">
         <span class="material-symbols-outlined">folder_open</span>
       </button>
-      <button class="icon-btn" onclick="saveGrid()" data-tooltip="Sauvegarder">
+      <button class="icon-btn" onclick="openSaveModal(false)" data-tooltip="Sauvegarder">
         <span class="material-symbols-outlined">save</span>
       </button>
-      <button class="icon-btn" onclick="openSaveAsModal()" data-tooltip="Enregistrer sous">
+      <button class="icon-btn" onclick="openSaveModal(true)" data-tooltip="Enregistrer sous">
         <span class="material-symbols-outlined">save_as</span>
-      </button>
-      <button class="icon-btn" onclick="exportJSON()" data-tooltip="Exporter JSON">
-        <span class="material-symbols-outlined">file_json</span>
       </button>
       
       <div class="topbar-separator"></div>
@@ -150,20 +147,28 @@
   </div>
 </div>
 
-<!-- Modal Enregistrer sous -->
-<div id="saveAsModal" class="modal-overlay" onclick="closeSaveAsModalOnOverlay(event)">
+<!-- Modal Enregistrer / Enregistrer sous -->
+<div id="saveModal" class="modal-overlay" onclick="closeSaveModalOnOverlay(event)">
   <div class="modal-card">
     <div class="modal-header">
-      <h3>Enregistrer la grille sous...</h3>
-      <button class="modal-close" onclick="closeSaveAsModal()">&times;</button>
+      <h3 id="saveModalTitle">Enregistrer la grille</h3>
+      <button class="modal-close" onclick="closeSaveModal()">&times;</button>
     </div>
     <div class="modal-body">
-      <div class="form-group">
+      <div class="form-group" id="saveAsNameGroup" style="display:none">
         <label>Nouveau nom de la grille</label>
         <input type="text" id="saveAsNameInput" placeholder="Ex: Ma Grille Copie">
       </div>
-      <div style="margin-top: 16px; text-align: right;">
-        <button class="btn-primary" onclick="confirmSaveAs()">Enregistrer</button>
+      <p class="save-choice-intro">Où souhaitez-vous enregistrer cette grille ?</p>
+      <div class="save-choice-row">
+        <button class="btn-save-choice" onclick="confirmSave('browser')">
+          <span class="material-symbols-outlined">cloud</span>
+          Dans le navigateur
+        </button>
+        <button class="btn-save-choice" onclick="confirmSave('file')">
+          <span class="material-symbols-outlined">save_alt</span>
+          Fichier JSON local
+        </button>
       </div>
     </div>
   </div>
