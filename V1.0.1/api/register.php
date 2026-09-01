@@ -58,5 +58,6 @@ try {
         $pdo->rollBack();
     }
     http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Erreur serveur lors de la création du compte.']);
+    // AFFICHER LA VRAIE ERREUR TEMPORAIREMENT POUR DEBUG
+    echo json_encode(['success' => false, 'error' => 'Erreur SQL : ' . $e->getMessage()]);
 }

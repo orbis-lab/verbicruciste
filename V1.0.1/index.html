@@ -16,372 +16,380 @@
 <body>
 
   <!-- Écran / Modale d'authentification (Connexion / Inscription) -->
-<div id="authModal" class="modal-overlay" style="display: none;">
+  <div id="authModal" class="modal-overlay" style="display: none;">
     <div class="modal-content auth-box">
-        <div class="auth-tabs">
-            <button id="tabLoginBtn" class="active" onclick="switchAuthTab('login')">Connexion</button>
-            <button id="tabRegisterBtn" onclick="switchAuthTab('register')">Inscription</button>
+      <div class="auth-tabs">
+        <button id="tabLoginBtn" class="active" onclick="switchAuthTab('login')">Connexion</button>
+        <button id="tabRegisterBtn" onclick="switchAuthTab('register')">Inscription</button>
+      </div>
+
+      <!-- Formulaire de Connexion -->
+      <form id="loginForm" onsubmit="handleLogin(event)" class="auth-form">
+        <h3>Connexion à votre espace</h3>
+        <div class="form-group">
+          <label for="loginEmail">E-mail</label>
+          <input type="email" id="loginEmail" required placeholder="votre@email.com">
         </div>
+        <div class="form-group">
+          <label for="loginPassword">Mot de passe</label>
+          <input type="password" id="loginPassword" required placeholder="••••••••">
+        </div>
+        <div id="loginError" class="error-msg"></div>
+        <button type="submit" class="btn-primary">Se connecter</button>
+      </form>
 
-        <!-- Formulaire de Connexion -->
-        <form id="loginForm" onsubmit="handleLogin(event)" class="auth-form">
-            <h3>Connexion à votre espace</h3>
-            <div class="form-group">
-                <label for="loginEmail">E-mail</label>
-                <input type="email" id="loginEmail" required placeholder="votre@email.com">
-            </div>
-            <div class="form-group">
-                <label for="loginPassword">Mot de passe</label>
-                <input type="password" id="loginPassword" required placeholder="••••••••">
-            </div>
-            <div id="loginError" class="error-msg"></div>
-            <button type="submit" class="btn-primary">Se connecter</button>
-        </form>
-
-        <!-- Formulaire d'Inscription -->
-        <form id="registerForm" onsubmit="handleRegister(event)" class="auth-form" style="display: none;">
-            <h3>Créer un compte</h3>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="regFirstName">Prénom</label>
-                    <input type="text" id="regFirstName" placeholder="Jean">
-                </div>
-                <div class="form-group">
-                    <label for="regLastName">Nom</label>
-                    <input type="text" id="regLastName" placeholder="Dupont">
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="regEmail">E-mail</label>
-                <input type="email" id="regEmail" required placeholder="votre@email.com">
-            </div>
-            <div class="form-group">
-                <label for="regPassword">Mot de passe</label>
-                <input type="password" id="regPassword" required placeholder="••••••••">
-            </div>
-            <div id="registerError" class="error-msg"></div>
-            <button type="submit" class="btn-primary">S'inscrire</button>
-        </form>
+      <!-- Formulaire d'Inscription -->
+      <form id="registerForm" onsubmit="handleRegister(event)" class="auth-form" style="display: none;">
+        <h3>Créer un compte</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="regFirstName">Prénom</label>
+            <input type="text" id="regFirstName" placeholder="Jean">
+          </div>
+          <div class="form-group">
+            <label for="regLastName">Nom</label>
+            <input type="text" id="regLastName" placeholder="Dupont">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="regEmail">E-mail</label>
+          <input type="email" id="regEmail" required placeholder="votre@email.com">
+        </div>
+        <div class="form-group">
+          <label for="regPassword">Mot de passe</label>
+          <input type="password" id="regPassword" required placeholder="••••••••">
+        </div>
+        <div id="registerError" class="error-msg"></div>
+        <button type="submit" class="btn-primary">S'inscrire</button>
+      </form>
     </div>
-</div>
+  </div>
 
-    <!-- Loader de démarrage -->
-    <div id="appLoader" class="app-loader">
-      <div class="loader-content">
-        <img src="./banner.svg" alt="Logo" class="loader-logo" />
-      </div>
+  <!-- Loader de démarrage -->
+  <div id="appLoader" class="app-loader">
+    <div class="loader-content">
+      <img src="./banner.svg" alt="Logo" class="loader-logo" />
+    </div>
+  </div>
+
+  <header>
+    <div class="header-left">
+      <img class="header-logo" alt="Logo" src="./banner.svg" />
     </div>
 
-    <header>
-      <div class="header-left">
-        <img class="header-logo" alt="Logo" src="./banner.svg" />
-      </div>
+    <div class="topbar-container">
+      <div class="topbar">
+        <button class="icon-btn" onclick="newGrid()" data-tooltip="Nouvelle grille">
+          <span class="material-symbols-outlined">new_window</span>
+        </button>
+        <button class="icon-btn" onclick="openLoadModal()" data-tooltip="Ouvrir">
+          <span class="material-symbols-outlined">folder_open</span>
+        </button>
+        <button class="icon-btn" onclick="openSaveModal(false)" data-tooltip="Sauvegarder">
+          <span class="material-symbols-outlined">save</span>
+        </button>
+        <button class="icon-btn" onclick="openSaveModal(true)" data-tooltip="Enregistrer sous">
+          <span class="material-symbols-outlined">save_as</span>
+        </button>
 
-      <div class="topbar-container">
-        <div class="topbar">
-          <button class="icon-btn" onclick="newGrid()" data-tooltip="Nouvelle grille">
-            <span class="material-symbols-outlined">new_window</span>
-          </button>
-          <button class="icon-btn" onclick="openLoadModal()" data-tooltip="Ouvrir">
-            <span class="material-symbols-outlined">folder_open</span>
-          </button>
-          <button class="icon-btn" onclick="openSaveModal(false)" data-tooltip="Sauvegarder">
-            <span class="material-symbols-outlined">save</span>
-          </button>
-          <button class="icon-btn" onclick="openSaveModal(true)" data-tooltip="Enregistrer sous">
-            <span class="material-symbols-outlined">save_as</span>
-          </button>
+        <div class="topbar-separator"></div>
 
-          <div class="topbar-separator"></div>
+        <button class="icon-btn" onclick="openSettingsModal(false)" data-tooltip="Paramètres">
+          <span class="material-symbols-outlined">settings</span>
+        </button>
 
-          <button class="icon-btn" onclick="openSettingsModal(false)" data-tooltip="Paramètres">
-            <span class="material-symbols-outlined">settings</span>
+        <div class="theme-selector-wrapper">
+          <button class="icon-btn" onclick="toggleThemeMenu(event)" data-tooltip="Thème">
+            <span class="material-symbols-outlined">palette</span>
           </button>
-
-          <div class="theme-selector-wrapper">
-            <button class="icon-btn" onclick="toggleThemeMenu(event)" data-tooltip="Thème">
-              <span class="material-symbols-outlined">palette</span>
+          <div id="themeMenu" class="theme-menu">
+            <button class="theme-menu-item" data-theme="light" onclick="setTheme('light')">
+              <span class="material-symbols-outlined">light_mode</span> Thème clair
             </button>
-            <div id="themeMenu" class="theme-menu">
-              <button class="theme-menu-item" data-theme="light" onclick="setTheme('light')">
-                <span class="material-symbols-outlined">light_mode</span> Thème clair
+            <button class="theme-menu-item" data-theme="dark" onclick="setTheme('dark')">
+              <span class="material-symbols-outlined">dark_mode</span> Thème sombre
+            </button>
+          </div>
+        </div>
+
+        <button class="icon-btn" onclick="openHelpModal()" data-tooltip="Aide">
+          <span class="material-symbols-outlined">help</span>
+        </button>
+
+        <div class="topbar-separator"></div>
+
+        <button class="icon-btn danger-btn" onclick="clearCell()" data-tooltip="Effacer case">
+          <span class="material-symbols-outlined">ink_eraser</span>
+        </button>
+        <button class="icon-btn danger-btn" onclick="clearGrid()" data-tooltip="Vider la grille">
+          <span class="material-symbols-outlined">delete_sweep</span>
+        </button>
+
+        <div class="topbar-separator"></div>
+        <!-- Exemple dans votre toolbar existante -->
+        <div class="toolbar-right">
+          <!-- Bouton utilisateur pour le menu de déconnexion / compte -->
+          <div id="userMenuContainer" class="user-menu-container" style="display: none;">
+            <button id="userMenuBtn" class="toolbar-btn" title="Mon compte">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <span id="userEmailDisplay"></span>
+            </button>
+            <div id="userDropdown" class="dropdown-content" style="display: none;">
+              <button id="btnLogout">Se déconnecter</button>
+            </div>
+          </div>
+        </div>
+        <div class="topbar-separator"></div>
+
+        <button class="icon-btn" onclick="window.print()" data-tooltip="Imprimer">
+          <span class="material-symbols-outlined">print</span>
+        </button>
+      </div>
+    </div>
+
+    <div></div>
+
+    <input id="fileInput" type="file" accept=".json" style="display:none" onchange="importJSON(event)">
+  </header>
+
+  <div class="app">
+
+    <aside class="left" onclick="closeMobilePanelOnOverlay(event, 'left')">
+      <button class="aside-close-btn" onclick="closeMobilePanel('left')" data-tooltip="Fermer">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+      <div class="inner-aside">
+
+
+        <div class="main-section">
+          <h1 class="main-section-tilte">Sélection</h1>
+          <div class="section">
+            <h2>Type</h2>
+            <div class="type-buttons">
+              <button class="type-btn" data-type="letter" onclick="setType('letter')">
+                <span class="material-symbols-outlined">match_word</span> Lettre
               </button>
-              <button class="theme-menu-item" data-theme="dark" onclick="setTheme('dark')">
-                <span class="material-symbols-outlined">dark_mode</span> Thème sombre
+              <button class="type-btn" data-type="definition" onclick="setType('definition')">
+                <span class="material-symbols-outlined">crop_square</span> Définition
+              </button>
+              <button class="type-btn" data-type="double" onclick="setType('double')">
+                <span class="material-symbols-outlined">splitscreen</span> Double déf.
               </button>
             </div>
           </div>
 
-          <button class="icon-btn" onclick="openHelpModal()" data-tooltip="Aide">
-            <span class="material-symbols-outlined">help</span>
-          </button>
+          <div class="section">
+            <h2>Options</h2>
+            <div id="selectedInfo" class="info">Cliquez sur une case de la grille.</div>
 
-          <div class="topbar-separator"></div>
+            <div id="wordFormedContainer"></div>
 
-          <button class="icon-btn danger-btn" onclick="clearCell()" data-tooltip="Effacer case">
-            <span class="material-symbols-outlined">ink_eraser</span>
-          </button>
-          <button class="icon-btn danger-btn" onclick="clearGrid()" data-tooltip="Vider la grille">
-            <span class="material-symbols-outlined">delete_sweep</span>
-          </button>
+            <div id="singleDefControls" style="display:none">
+              <label>Définition</label>
+              <textarea id="definitionInput" rows="4"
+                style="width:100%;resize:vertical;border:1px solid #bbb;border-radius:5px;padding:7px;text-transform:uppercase;"
+                oninput="updateDefinition(this.value)"></textarea>
 
-          <div class="topbar-separator"></div>
-<div id="userMenuContainer" class="user-menu-container" style="display: none;">
-        <button id="userMenuBtn" class="toolbar-btn" title="Mon compte">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-            <span id="userEmailDisplay"></span>
+              <label>Direction de la flèche</label>
+              <div class="arrows-row">
+                <button id="btnArrowE" onclick="setArrow('E')"><span
+                    class="material-symbols-outlined">arrow_right_alt</span></button>
+                <button id="btnArrowS" onclick="setArrow('S')"><span
+                    class="material-symbols-outlined">south</span></button>
+              </div>
+            </div>
+
+            <div id="doubleDefControls" style="display:none">
+              <div class="inline-label-with-icon">
+                <span>Définition du haut</span><span class="material-symbols-outlined"
+                  style="font-size:18px;">arrow_right_alt</span>
+              </div>
+              <textarea id="topDefinitionInput" rows="3"
+                style="width:100%;resize:vertical;border:1px solid #bbb;border-radius:5px;padding:7px;text-transform:uppercase;"
+                oninput="updateHalfDefinition('top', this.value)"></textarea>
+
+              <div class="inline-label-with-icon">
+                <span>Définition du bas</span><span class="material-symbols-outlined"
+                  style="font-size:18px;">south</span>
+              </div>
+              <textarea id="bottomDefinitionInput" rows="3"
+                style="width:100%;resize:vertical;border:1px solid #bbb;border-radius:5px;padding:7px;text-transform:uppercase;"
+                oninput="updateHalfDefinition('bottom', this.value)"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="main-section">
+          <h1 class="main-section-tilte">Grille</h1>
+          <div class="section">
+            <h2>Nom</h2>
+            <div id="gridNameDisplay" class="grid-name-display">Ma Grille</div>
+          </div>
+
+          <div class="section">
+            <h2>Dimension</h2>
+            <div id="gridDimensionsDisplay">Grille de 13 colonnes × 17 lignes</div>
+          </div>
+        </div>
+
+      </div>
+    </aside>
+    <main class="editor">
+      <img src="./banner.svg" alt="Logo" class="print-banner" />
+      <div id="printTitle" class="print-title">Ma Grille</div>
+      <div id="grid" class="grid"></div>
+      <div class="zoom-badge">
+        <button class="zoom-btn" id="zoomInBtn" data-tooltip="Zoom avant">
+          <span class="material-symbols-outlined">zoom_in</span>
         </button>
-        <div id="userDropdown" class="dropdown-content" style="display: none;">
-            <button id="btnLogout">Se déconnecter</button>
-        </div>
-    </div>
-          <div class="topbar-separator"></div>
-
-          <button class="icon-btn" onclick="window.print()" data-tooltip="Imprimer">
-            <span class="material-symbols-outlined">print</span>
-          </button>
-        </div>
+        <span class="zoom-level" id="zoomLevelDisplay">100%</span>
+        <button class="zoom-btn" id="zoomOutBtn" data-tooltip="Zoom arrière">
+          <span class="material-symbols-outlined">zoom_out</span>
+        </button>
       </div>
 
-      <div></div>
-
-      <input id="fileInput" type="file" accept=".json" style="display:none" onchange="importJSON(event)">
-    </header>
-
-    <div class="app">
-
-      <aside class="left" onclick="closeMobilePanelOnOverlay(event, 'left')">
-        <button class="aside-close-btn" onclick="closeMobilePanel('left')" data-tooltip="Fermer">
-          <span class="material-symbols-outlined">close</span>
-        </button>
-        <div class="inner-aside">
-          
-
-          <div class="main-section">
-            <h1 class="main-section-tilte">Sélection</h1>
-            <div class="section">
-              <h2>Type</h2>
-              <div class="type-buttons">
-                <button class="type-btn" data-type="letter" onclick="setType('letter')">
-                  <span class="material-symbols-outlined">match_word</span> Lettre
-                </button>
-                <button class="type-btn" data-type="definition" onclick="setType('definition')">
-                  <span class="material-symbols-outlined">crop_square</span> Définition
-                </button>
-                <button class="type-btn" data-type="double" onclick="setType('double')">
-                  <span class="material-symbols-outlined">splitscreen</span> Double déf.
-                </button>
-              </div>
-            </div>
-
-            <div class="section">
-              <h2>Options</h2>
-              <div id="selectedInfo" class="info">Cliquez sur une case de la grille.</div>
-
-              <div id="wordFormedContainer"></div>
-
-              <div id="singleDefControls" style="display:none">
-                <label>Définition</label>
-                <textarea id="definitionInput" rows="4"
-                  style="width:100%;resize:vertical;border:1px solid #bbb;border-radius:5px;padding:7px;text-transform:uppercase;"
-                  oninput="updateDefinition(this.value)"></textarea>
-
-                <label>Direction de la flèche</label>
-                <div class="arrows-row">
-                  <button id="btnArrowE" onclick="setArrow('E')"><span
-                      class="material-symbols-outlined">arrow_right_alt</span></button>
-                  <button id="btnArrowS" onclick="setArrow('S')"><span
-                      class="material-symbols-outlined">south</span></button>
-                </div>
-              </div>
-
-              <div id="doubleDefControls" style="display:none">
-                <div class="inline-label-with-icon">
-                  <span>Définition du haut</span><span class="material-symbols-outlined"
-                    style="font-size:18px;">arrow_right_alt</span>
-                </div>
-                <textarea id="topDefinitionInput" rows="3"
-                  style="width:100%;resize:vertical;border:1px solid #bbb;border-radius:5px;padding:7px;text-transform:uppercase;"
-                  oninput="updateHalfDefinition('top', this.value)"></textarea>
-
-                <div class="inline-label-with-icon">
-                  <span>Définition du bas</span><span class="material-symbols-outlined"
-                    style="font-size:18px;">south</span>
-                </div>
-                <textarea id="bottomDefinitionInput" rows="3"
-                  style="width:100%;resize:vertical;border:1px solid #bbb;border-radius:5px;padding:7px;text-transform:uppercase;"
-                  oninput="updateHalfDefinition('bottom', this.value)"></textarea>
-              </div>
-            </div>
-          </div>
-
-          <div class="main-section">
-            <h1 class="main-section-tilte">Grille</h1>
-            <div class="section">
-              <h2>Nom</h2>
-              <div id="gridNameDisplay" class="grid-name-display">Ma Grille</div>
-            </div>
-
-            <div class="section">
-              <h2>Dimension</h2>
-              <div id="gridDimensionsDisplay">Grille de 13 colonnes × 17 lignes</div>
-            </div>
-          </div>
-
-        </div>
-      </aside>
-      <main class="editor">
-        <img src="./banner.svg" alt="Logo" class="print-banner" />
-        <div id="printTitle" class="print-title">Ma Grille</div>
-        <div id="grid" class="grid"></div>
-        <div class="zoom-badge">
-          <button class="zoom-btn" id="zoomInBtn" data-tooltip="Zoom avant">
-            <span class="material-symbols-outlined">zoom_in</span>
-          </button>
-          <span class="zoom-level" id="zoomLevelDisplay">100%</span>
-          <button class="zoom-btn" id="zoomOutBtn" data-tooltip="Zoom arrière">
-            <span class="material-symbols-outlined">zoom_out</span>
-          </button>
-        </div>
-
-        <!-- Icônes latérales (mobile) : ouvrent les panneaux Sélection / Mots placés
+      <!-- Icônes latérales (mobile) : ouvrent les panneaux Sélection / Mots placés
              en superposition de la grille -->
-        <button class="lateral-toggle lateral-toggle-left" onclick="openMobilePanel('left')" data-tooltip="Sélection">
-          <span class="material-symbols-outlined">tune</span>
-        </button>
-        <button class="lateral-toggle lateral-toggle-right" onclick="openMobilePanel('right')" data-tooltip="Mots placés">
-          <span class="material-symbols-outlined">format_list_bulleted</span>
-        </button>
-      </main>
+      <button class="lateral-toggle lateral-toggle-left" onclick="openMobilePanel('left')" data-tooltip="Sélection">
+        <span class="material-symbols-outlined">tune</span>
+      </button>
+      <button class="lateral-toggle lateral-toggle-right" onclick="openMobilePanel('right')" data-tooltip="Mots placés">
+        <span class="material-symbols-outlined">format_list_bulleted</span>
+      </button>
+    </main>
 
-      <aside class="right" onclick="closeMobilePanelOnOverlay(event, 'right')">
-        <button class="aside-close-btn" onclick="closeMobilePanel('right')" data-tooltip="Fermer">
-          <span class="material-symbols-outlined">close</span>
-        </button>
+    <aside class="right" onclick="closeMobilePanelOnOverlay(event, 'right')">
+      <button class="aside-close-btn" onclick="closeMobilePanel('right')" data-tooltip="Fermer">
+        <span class="material-symbols-outlined">close</span>
+      </button>
 
-        <div class="inner-aside">
+      <div class="inner-aside">
 
-          <div class="main-section">
-            <div class="words-sidebar">
-              <h1 class="main-section-tilte">Mots placés</h1>
-              <div id="wordsCount" class="count-info">0 mot trouvé</div>
-              <div id="wordsList" class="words-list"></div>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-    </div>
-
-    <!-- Modal Ouvrir / Charger -->
-    <div id="loadModal" class="modal-overlay" onclick="closeLoadModalOnOverlay(event)">
-      <div class="modal-card">
-        <div class="modal-header">
-          <h3>Ouvrir une grille</h3>
-          <button class="modal-close" onclick="closeLoadModal()">&times;</button>
-        </div>
-        <div id="modalBody" class="modal-body"></div>
-      </div>
-    </div>
-
-    <!-- Modal Enregistrer / Enregistrer sous -->
-    <div id="saveModal" class="modal-overlay" onclick="closeSaveModalOnOverlay(event)">
-      <div class="modal-card">
-        <div class="modal-header">
-          <h3 id="saveModalTitle">Enregistrer la grille</h3>
-          <button class="modal-close" onclick="closeSaveModal()">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div class="form-group" id="saveAsNameGroup" style="display:none">
-            <label>Nouveau nom de la grille</label>
-            <input type="text" id="saveAsNameInput" placeholder="Ex: Ma Grille Copie">
-          </div>
-          <p class="save-choice-intro">Où souhaitez-vous enregistrer cette grille ?</p>
-          <div class="save-choice-row">
-            <button class="btn-save-choice" onclick="confirmSave('browser')">
-              <span class="material-symbols-outlined">cloud</span>
-              Dans le navigateur
-            </button>
-            <button class="btn-save-choice" onclick="confirmSave('file')">
-              <span class="material-symbols-outlined">save_alt</span>
-              Fichier JSON local
-            </button>
+        <div class="main-section">
+          <div class="words-sidebar">
+            <h1 class="main-section-tilte">Mots placés</h1>
+            <div id="wordsCount" class="count-info">0 mot trouvé</div>
+            <div id="wordsList" class="words-list"></div>
           </div>
         </div>
       </div>
-    </div>
+    </aside>
 
-    <!-- Modal Paramètres -->
-    <div id="settingsModal" class="modal-overlay" onclick="closeSettingsModalOnOverlay(event)">
-      <div class="modal-card">
-        <div class="modal-header">
-          <h3 id="settingsModalTitle">Paramètres de la grille</h3>
-          <button class="modal-close" onclick="closeSettingsModal()">&times;</button>
+  </div>
+
+  <!-- Modal Ouvrir / Charger -->
+  <div id="loadModal" class="modal-overlay" onclick="closeLoadModalOnOverlay(event)">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Ouvrir une grille</h3>
+        <button class="modal-close" onclick="closeLoadModal()">&times;</button>
+      </div>
+      <div id="modalBody" class="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Modal Enregistrer / Enregistrer sous -->
+  <div id="saveModal" class="modal-overlay" onclick="closeSaveModalOnOverlay(event)">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="saveModalTitle">Enregistrer la grille</h3>
+        <button class="modal-close" onclick="closeSaveModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group" id="saveAsNameGroup" style="display:none">
+          <label>Nouveau nom de la grille</label>
+          <input type="text" id="saveAsNameInput" placeholder="Ex: Ma Grille Copie">
         </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label>Nom de la grille</label>
-            <input type="text" id="settingName" placeholder="Ex: Grille Facile N°1">
-          </div>
-          <div class="form-group">
-            <label>Nombre de colonnes</label>
-            <input type="number" id="settingCols" min="5" max="50">
-          </div>
-          <div class="form-group">
-            <label>Nombre de lignes</label>
-            <input type="number" id="settingRows" min="5" max="50">
-          </div>
-          <div style="margin-top: 16px; text-align: right;">
-            <button class="btn-primary" onclick="applySettings()">Valider</button>
-          </div>
+        <p class="save-choice-intro">Où souhaitez-vous enregistrer cette grille ?</p>
+        <div class="save-choice-row">
+          <button class="btn-save-choice" onclick="confirmSave('browser')">
+            <span class="material-symbols-outlined">cloud</span>
+            Dans le navigateur
+          </button>
+          <button class="btn-save-choice" onclick="confirmSave('file')">
+            <span class="material-symbols-outlined">save_alt</span>
+            Fichier JSON local
+          </button>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Modal Aide -->
-    <div id="helpModal" class="modal-overlay" onclick="closeHelpModalOnOverlay(event)">
-      <div class="modal-card">
-        <div class="modal-header">
-          <h3>Aide</h3>
-          <button class="modal-close" onclick="closeHelpModal()">&times;</button>
+  <!-- Modal Paramètres -->
+  <div id="settingsModal" class="modal-overlay" onclick="closeSettingsModalOnOverlay(event)">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="settingsModalTitle">Paramètres de la grille</h3>
+        <button class="modal-close" onclick="closeSettingsModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Nom de la grille</label>
+          <input type="text" id="settingName" placeholder="Ex: Grille Facile N°1">
         </div>
-        <div class="modal-body">
-          <div class="info">
-            <strong>Utilisation :</strong><br>
-            1. Cliquez sur une case.<br>
-            2. Choisissez son type.<br>
-            3. Tapez une lettre pour passer à la suivante.
-            <br><br>
-            <strong>Navigation & Zoom :</strong><br>
-            1. Zoom : Utilisez la molette de la souris sur la grille.<br>
-            2. Déplacement : Cliquez sur le fond vide et glissez.
-          </div>
+        <div class="form-group">
+          <label>Nombre de colonnes</label>
+          <input type="number" id="settingCols" min="5" max="50">
+        </div>
+        <div class="form-group">
+          <label>Nombre de lignes</label>
+          <input type="number" id="settingRows" min="5" max="50">
+        </div>
+        <div style="margin-top: 16px; text-align: right;">
+          <button class="btn-primary" onclick="applySettings()">Valider</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Modal Restauration de la grille précédente -->
-    <div id="restoreModal" class="modal-overlay">
-      <div class="modal-card">
-        <div class="modal-header">
-          <h3>Grille précédente trouvée</h3>
-        </div>
-        <div class="modal-body">
-          <p class="save-choice-intro">Une grille précédente a été trouvée. Souhaitez-vous la restaurer ou commencer une nouvelle grille ?</p>
-          <div class="save-choice-row">
-            <button class="btn-save-choice" onclick="restorePreviousSession()">
-              <span class="material-symbols-outlined">history</span>
-              Restaurer la grille
-            </button>
-            <button class="btn-save-choice" onclick="discardPreviousSession()">
-              <span class="material-symbols-outlined">add_box</span>
-              Nouvelle grille
-            </button>
-          </div>
+  <!-- Modal Aide -->
+  <div id="helpModal" class="modal-overlay" onclick="closeHelpModalOnOverlay(event)">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Aide</h3>
+        <button class="modal-close" onclick="closeHelpModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="info">
+          <strong>Utilisation :</strong><br>
+          1. Cliquez sur une case.<br>
+          2. Choisissez son type.<br>
+          3. Tapez une lettre pour passer à la suivante.
+          <br><br>
+          <strong>Navigation & Zoom :</strong><br>
+          1. Zoom : Utilisez la molette de la souris sur la grille.<br>
+          2. Déplacement : Cliquez sur le fond vide et glissez.
         </div>
       </div>
     </div>
+  </div>
 
-  </body>
+  <!-- Modal Restauration de la grille précédente -->
+  <div id="restoreModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Grille précédente trouvée</h3>
+      </div>
+      <div class="modal-body">
+        <p class="save-choice-intro">Une grille précédente a été trouvée. Souhaitez-vous la restaurer ou commencer une
+          nouvelle grille ?</p>
+        <div class="save-choice-row">
+          <button class="btn-save-choice" onclick="restorePreviousSession()">
+            <span class="material-symbols-outlined">history</span>
+            Restaurer la grille
+          </button>
+          <button class="btn-save-choice" onclick="discardPreviousSession()">
+            <span class="material-symbols-outlined">add_box</span>
+            Nouvelle grille
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
 
 </html>

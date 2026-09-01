@@ -44,7 +44,6 @@ try {
     $updateStmt->execute([$userRecord['id']]);
 
     // Ouvrir la session PHP
-    session_start();
     $_SESSION['user_id'] = $userRecord['id'];
     $_SESSION['email'] = $userRecord['email'];
 

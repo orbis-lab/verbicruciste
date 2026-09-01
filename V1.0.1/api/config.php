@@ -1,4 +1,9 @@
 <?php
+// Désactiver l'affichage des erreurs HTML dans les réponses
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
+
+// ... le reste de votre code de configuration et session_start()
 // api/config.php
 
 // 1. Gestion des CORS avec un tableau d'origines autorisées
