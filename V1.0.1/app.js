@@ -962,6 +962,40 @@ function openSettingsModal(isNew = false) {
 
 function closeSettingsModal() { document.getElementById("settingsModal").classList.remove("active"); }
 function closeSettingsModalOnOverlay(event) { if (event.target.id === "settingsModal") closeSettingsModal(); }
+// Fonction pour sauvegarder la grille dans le cloud via save_grid.php
+const saveGridToCloud = (gridData) => {
+  const payload = {
+    id: currentGridId, // <--- On envoie l'ID actuel au serveur
+    name: currentGridName,
+    cols: COLS,
+    rows: ROWS,
+    version: gridData.version || 2,
+    cells: gridData.cells || cells
+  };
+
+  fetch('api/save_grid.php', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // <--- On met à jour l'ID avec celui retourné (essentiel après un premier INSERT)
+        if (data.grid_id) {
+          currentGridId = data.grid_id;
+        }
+        console.log("Grille sauvegardée dans le cloud avec succès !");
+      } else {
+        console.error("Erreur lors de la sauvegarde :", data.error || data.message);
+      }
+    })
+    .catch(error => {
+      console.error("Erreur réseau :", error);
+    });
+};
 
 async function applySettings() {
   const newName = document.getElementById('settingName').value.trim() || "Grille Sans Nom";
@@ -1464,40 +1498,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 // Fonction pour sauvegarder la grille dans le cloud via save_grid.php
-// Fonction pour sauvegarder la grille dans le cloud via save_grid.php
-const saveGridToCloud = (gridData) => {
-  const payload = {
-    id: currentGridId, // <--- On envoie l'ID actuel au serveur
-    name: currentGridName,
-    cols: COLS,
-    rows: ROWS,
-    version: gridData.version || 2,
-    cells: gridData.cells || cells
-  };
-
-  fetch('api/save_grid.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(payload)
-  })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        // <--- On met à jour l'ID avec celui retourné (essentiel après un premier INSERT)
-        if (data.grid_id) {
-          currentGridId = data.grid_id;
-        }
-        console.log("Grille sauvegardée dans le cloud avec succès !");
-      } else {
-        console.error("Erreur lors de la sauvegarde :", data.error || data.message);
-      }
-    })
-    .catch(error => {
-      console.error("Erreur réseau :", error);
-    });
-};
 
 
 // Remplace le localStorage par un appel à l'API load_grids.php
