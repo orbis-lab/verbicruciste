@@ -15,7 +15,56 @@
 
 <body>
 
-  <body>
+  <!-- Écran / Modale d'authentification (Connexion / Inscription) -->
+<div id="authModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content auth-box">
+        <div class="auth-tabs">
+            <button id="tabLoginBtn" class="active" onclick="switchAuthTab('login')">Connexion</button>
+            <button id="tabRegisterBtn" onclick="switchAuthTab('register')">Inscription</button>
+        </div>
+
+        <!-- Formulaire de Connexion -->
+        <form id="loginForm" onsubmit="handleLogin(event)" class="auth-form">
+            <h3>Connexion à votre espace</h3>
+            <div class="form-group">
+                <label for="loginEmail">E-mail</label>
+                <input type="email" id="loginEmail" required placeholder="votre@email.com">
+            </div>
+            <div class="form-group">
+                <label for="loginPassword">Mot de passe</label>
+                <input type="password" id="loginPassword" required placeholder="••••••••">
+            </div>
+            <div id="loginError" class="error-msg"></div>
+            <button type="submit" class="btn-primary">Se connecter</button>
+        </form>
+
+        <!-- Formulaire d'Inscription -->
+        <form id="registerForm" onsubmit="handleRegister(event)" class="auth-form" style="display: none;">
+            <h3>Créer un compte</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="regFirstName">Prénom</label>
+                    <input type="text" id="regFirstName" placeholder="Jean">
+                </div>
+                <div class="form-group">
+                    <label for="regLastName">Nom</label>
+                    <input type="text" id="regLastName" placeholder="Dupont">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="regEmail">E-mail</label>
+                <input type="email" id="regEmail" required placeholder="votre@email.com">
+            </div>
+            <div class="form-group">
+                <label for="regPassword">Mot de passe</label>
+                <input type="password" id="regPassword" required placeholder="••••••••">
+            </div>
+            <div id="registerError" class="error-msg"></div>
+            <button type="submit" class="btn-primary">S'inscrire</button>
+        </form>
+    </div>
+</div>
+
     <!-- Loader de démarrage -->
     <div id="appLoader" class="app-loader">
       <div class="loader-content">
@@ -76,6 +125,16 @@
             <span class="material-symbols-outlined">delete_sweep</span>
           </button>
 
+          <div class="topbar-separator"></div>
+<div id="userMenuContainer" class="user-menu-container" style="display: none;">
+        <button id="userMenuBtn" class="toolbar-btn" title="Mon compte">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            <span id="userEmailDisplay"></span>
+        </button>
+        <div id="userDropdown" class="dropdown-content" style="display: none;">
+            <button id="btnLogout">Se déconnecter</button>
+        </div>
+    </div>
           <div class="topbar-separator"></div>
 
           <button class="icon-btn" onclick="window.print()" data-tooltip="Imprimer">

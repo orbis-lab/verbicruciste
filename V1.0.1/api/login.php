@@ -1,4 +1,6 @@
 <?php
+require_once 'config.php'; // Gère déjà CORS, JSON, Session, Erreurs et $pdo
+
 // api/login.php
 header('Content-Type: application/json');
 
@@ -19,9 +21,7 @@ $user = 'VOTRE_UTILISATEUR_DB';
 $pass = 'VOTRE_MOT_DE_PASSE_DB';
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-    ]);
+    
 
     $stmt = $pdo->prepare("SELECT id, email, password_hash, is_active FROM users WHERE email = ?");
     $stmt->execute([$email]);

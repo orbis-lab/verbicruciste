@@ -1,4 +1,6 @@
 <?php
+require_once 'config.php'; // Gère déjà CORS, JSON, Session, Erreurs et $pdo
+
 // api/logout.php
 header('Content-Type: application/json');
 session_start();

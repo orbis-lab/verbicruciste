@@ -1,6 +1,6 @@
 <?php
 // api/register.php
-header('Content-Type: application/json');
+require_once 'config.php'; // Gère déjà CORS, JSON, Session et $pdo
 
 $input = json_decode(file_get_contents('php://input'), true);
 
@@ -21,17 +21,7 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     exit;
 }
 
-// Paramètres de connexion (à adapter avec vos identifiants InfinityFree)
-$host = 'sql109.infinityfree.com';
-$db   = 'if0_42802462_verbicruciste';
-$user = 'VOTRE_UTILISATEUR_DB';
-$pass = 'VOTRE_MOT_DE_PASSE_DB';
-
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-    ]);
-
     // Vérifier si l'e-mail existe déjà
     $checkStmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
     $checkStmt->execute([$email]);
@@ -57,8 +47,7 @@ try {
 
     $pdo->commit();
 
-    // Démarrage de la session PHP pour connecter l'utilisateur immédiatement après son inscription
-    session_start();
+    // La session est déjà active grâce à config.php, on enregistre l'utilisateur dedans
     $_SESSION['user_id'] = $userId;
     $_SESSION['email'] = $email;
 

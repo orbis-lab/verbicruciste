@@ -89,12 +89,12 @@ window.init = function () {
 };
 
 function updateZoomDisplay() {
-      const zoomLevelDisplay = document.getElementById('zoomLevelDisplay');
-      if (zoomLevelDisplay) {
-        zoomLevelDisplay.textContent = `${Math.round(scale * 100)}%`;
-      }
-      
-    }
+  const zoomLevelDisplay = document.getElementById('zoomLevelDisplay');
+  if (zoomLevelDisplay) {
+    zoomLevelDisplay.textContent = `${Math.round(scale * 100)}%`;
+  }
+
+}
 
 // Fonction dédiée à la gestion du Pan (glissement) et du Zoom de la grille
 // Fonction dédiée à la gestion du Pan (glissement) et du Zoom de la grille
@@ -1257,3 +1257,141 @@ function importJSON(event) {
   reader.readAsText(file);
 }
 
+
+
+
+
+// Basculer entre les onglets Connexion / Inscription
+function switchAuthTab(tab) {
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+  const tabLoginBtn = document.getElementById('tabLoginBtn');
+  const tabRegisterBtn = document.getElementById('tabRegisterBtn');
+
+  if (tab === 'login') {
+    loginForm.style.display = 'block';
+    registerForm.style.display = 'none';
+    tabLoginBtn.classList.add('active');
+    tabRegisterBtn.classList.remove('active');
+  } else {
+    loginForm.style.display = 'none';
+    registerForm.style.display = 'block';
+    tabRegisterBtn.classList.add('active');
+    tabLoginBtn.classList.remove('active');
+  }
+}
+
+// Gestion de la Connexion
+async function handleLogin(event) {
+  event.preventDefault();
+  const email = document.getElementById('loginEmail').value;
+  const password = document.getElementById('loginPassword').value;
+  const errorDiv = document.getElementById('loginError');
+  errorDiv.textContent = '';
+
+  try {
+    const response = await fetch('./api/login.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email, password })
+    });
+    const data = await response.json();
+
+    if (data.success) {
+      document.getElementById('authModal').style.display = 'none';
+      checkUserSession(); // Recharge l'état utilisateur
+    } else {
+      errorDiv.textContent = data.error || 'Erreur de connexion';
+    }
+  } catch (err) {
+    errorDiv.textContent = 'Impossible de contacter le serveur.';
+  }
+}
+
+// Gestion de l'Inscription
+async function handleRegister(event) {
+  event.preventDefault();
+  const first_name = document.getElementById('regFirstName').value;
+  const last_name = document.getElementById('regLastName').value;
+  const email = document.getElementById('regEmail').value;
+  const password = document.getElementById('regPassword').value;
+  const errorDiv = document.getElementById('registerError');
+  errorDiv.textContent = '';
+
+  try {
+    const response = await fetch('./api/register.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ first_name, last_name, email, password })
+    });
+    const data = await response.json();
+
+    if (data.success) {
+      document.getElementById('authModal').style.display = 'none';
+      checkUserSession(); // Recharge l'état utilisateur
+    } else {
+      errorDiv.textContent = data.error || 'Erreur lors de l\'inscription';
+    }
+  } catch (err) {
+    errorDiv.textContent = 'Impossible de contacter le serveur.';
+  }
+}
+
+// Gestion de la Déconnexion
+async function handleLogout() {
+  try {
+    await fetch('./api/logout.php');
+    location.reload(); // Recharge la page pour réafficher la modale
+  } catch (err) {
+    console.error('Erreur lors de la déconnexion');
+  }
+}
+
+// Vérifier si l'utilisateur est connecté au chargement de l'application
+async function checkUserSession() {
+  try {
+    // Vous pouvez créer un petit script ./api/check_session.php ou vérifier via une réponse API existante.
+    // Alternative simple : on tente de charger les grilles, si erreur 401, l'utilisateur n'est pas connecté.
+    const response = await fetch('./api/load_grids.php'); // Ou autre endpoint protégé
+    if (response.status === 401) {
+      document.getElementById('authModal').style.display = 'flex';
+      document.getElementById('userMenuContainer').style.display = 'none';
+    } else {
+      document.getElementById('authModal').style.display = 'none';
+      document.getElementById('userMenuContainer').style.display = 'inline-block';
+      // Optionnel : afficher l'email si l'API le renvoie
+    }
+  } catch (err) {
+    // En cas de doute, afficher la modale de sécurité
+    document.getElementById('authModal').style.display = 'flex';
+  }
+}
+
+// Événements d'interface au chargement du DOM
+document.addEventListener('DOMContentLoaded', () => {
+  checkUserSession();
+
+  // Gestion du menu déroulant utilisateur dans la toolbar
+  const userMenuBtn = document.getElementById('userMenuBtn');
+  const userDropdown = document.getElementById('userDropdown');
+  const btnLogout = document.getElementById('btnLogout');
+
+  if (userMenuBtn) {
+    userMenuBtn.addEventListener('click', () => {
+      userDropdown.style.display = userDropdown.style.display === 'block' ? 'none' : 'block';
+    });
+  }
+
+  if (btnLogout) {
+    btnLogout.addEventListener('click', handleLogout);
+  }
+
+  // Fermer le menu si l'on clique ailleurs
+  window.addEventListener('click', (e) => {
+    if (!e.target.closest('#userMenuContainer')) {
+      if (userDropdown) userDropdown.style.display = 'none';
+    }
+  });
+});

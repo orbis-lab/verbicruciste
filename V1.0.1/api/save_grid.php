@@ -1,4 +1,6 @@
 <?php
+require_once 'config.php'; // Gère déjà CORS, JSON, Session, Erreurs et $pdo
+
 // api/save_grid.php
 header('Content-Type: application/json');
 
@@ -34,9 +36,7 @@ $user = 'if0_42802462';
 $pass = 'hNnPCNLKzrVW7sh';
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-    ]);
+    
 
     $pdo->beginTransaction();
 
