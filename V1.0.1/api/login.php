@@ -23,7 +23,7 @@ $pass = 'VOTRE_MOT_DE_PASSE_DB';
 try {
     
 
-    $stmt = $pdo->prepare("SELECT id, email, password_hash, is_active FROM users WHERE email = ?");
+    $stmt = $pdo->prepare("SELECT id, email, password_hash, first_name, last_name, last_login_at, is_active FROM users WHERE email = ?");
     $stmt->execute([$email]);
     $userRecord = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -47,7 +47,18 @@ try {
     $_SESSION['user_id'] = $userRecord['id'];
     $_SESSION['email'] = $userRecord['email'];
 
-    echo json_encode(['success' => true, 'message' => 'Connexion réussie.']);
+    echo json_encode([
+        "success" => true,
+        "message" => "Connexion réussie.",
+        "user" => [
+            "id" => $userRecord['id'],
+            "first_name" => $userRecord['first_name'],
+            "last_name" => $userRecord['last_name'],
+            "email" => $userRecord['email'],
+            "last_login_at" => $userRecord['last_login_at']
+        ]
+    ]);
+
 
 } catch (Exception $e) {
     http_response_code(500);

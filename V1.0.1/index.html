@@ -79,45 +79,29 @@
 
     <div class="topbar-container">
       <div class="topbar">
+        <!-- BLOC 1 : Fichiers, Projet & Paramètres -->
         <button class="icon-btn" onclick="newGrid()" data-tooltip="Nouvelle grille">
           <span class="material-symbols-outlined">new_window</span>
         </button>
         <button class="icon-btn" onclick="openLoadModal()" data-tooltip="Ouvrir">
           <span class="material-symbols-outlined">folder_open</span>
         </button>
-        <button class="icon-btn" onclick="openSaveModal(false)" data-tooltip="Sauvegarder">
+        <button class="icon-btn" onclick="openSaveModal(false)" data-tooltip="Enregistrer">
           <span class="material-symbols-outlined">save</span>
         </button>
         <button class="icon-btn" onclick="openSaveModal(true)" data-tooltip="Enregistrer sous">
           <span class="material-symbols-outlined">save_as</span>
         </button>
-
-        <div class="topbar-separator"></div>
-
+        <button class="icon-btn" onclick="window.print()" data-tooltip="Imprimer">
+          <span class="material-symbols-outlined">print</span>
+        </button>
         <button class="icon-btn" onclick="openSettingsModal(false)" data-tooltip="Paramètres">
           <span class="material-symbols-outlined">settings</span>
         </button>
 
-        <div class="theme-selector-wrapper">
-          <button class="icon-btn" onclick="toggleThemeMenu(event)" data-tooltip="Thème">
-            <span class="material-symbols-outlined">palette</span>
-          </button>
-          <div id="themeMenu" class="theme-menu">
-            <button class="theme-menu-item" data-theme="light" onclick="setTheme('light')">
-              <span class="material-symbols-outlined">light_mode</span> Thème clair
-            </button>
-            <button class="theme-menu-item" data-theme="dark" onclick="setTheme('dark')">
-              <span class="material-symbols-outlined">dark_mode</span> Thème sombre
-            </button>
-          </div>
-        </div>
-
-        <button class="icon-btn" onclick="openHelpModal()" data-tooltip="Aide">
-          <span class="material-symbols-outlined">help</span>
-        </button>
-
         <div class="topbar-separator"></div>
 
+        <!-- BLOC 2 : Édition locale de la grille -->
         <button class="icon-btn danger-btn" onclick="clearCell()" data-tooltip="Effacer case">
           <span class="material-symbols-outlined">ink_eraser</span>
         </button>
@@ -126,27 +110,26 @@
         </button>
 
         <div class="topbar-separator"></div>
-        <!-- Exemple dans votre toolbar existante -->
-        <div class="toolbar-right">
-          <!-- Bouton utilisateur pour le menu de déconnexion / compte -->
-          <div id="userMenuContainer" class="user-menu-container" style="display: none;">
-            <button id="userMenuBtn" class="toolbar-btn" title="Mon compte">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-              <span id="userEmailDisplay"></span>
-            </button>
-            <div id="userDropdown" class="dropdown-content" style="display: none;">
-              <button id="btnLogout">Se déconnecter</button>
-            </div>
-          </div>
-        </div>
+
+        <!-- BLOC 3 : Confort & Aide -->
+        <button class="icon-btn" onclick="openThemeModal()" data-tooltip="Thème">
+          <span class="material-symbols-outlined">palette</span>
+        </button>
+
+        <button class="icon-btn" onclick="openHelpModal()" data-tooltip="Aide">
+          <span class="material-symbols-outlined">help</span>
+        </button>
+
         <div class="topbar-separator"></div>
 
-        <button class="icon-btn" onclick="window.print()" data-tooltip="Imprimer">
-          <span class="material-symbols-outlined">print</span>
-        </button>
+        <!-- BLOC 4 : Session / Compte (Isolé à droite) -->
+        <div id="userMenuContainer" style="display: none;">
+          <button class="icon-btn" onclick="openUserModal()" data-tooltip="Mon compte">
+            <span class="material-symbols-outlined">account_circle</span>
+          </button>
+        </div>
+
+
       </div>
     </div>
 
@@ -345,6 +328,40 @@
     </div>
   </div>
 
+  <!-- Modal Mon Compte -->
+  <div id="userModal" class="modal-overlay" onclick="closeUserModalOnOverlay(event)">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Mon compte</h3>
+        <button class="modal-close" onclick="closeUserModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- Nom d'utilisateur / Prénom et Nom -->
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label>Nom d'utilisateur</label>
+          <div id="userNameModalDisplay" style="font-weight: bold; color: #333; font-size: 14px; padding: 4px 0;">-
+          </div>
+        </div>
+
+        <!-- E-mail -->
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label>E-mail</label>
+          <div id="userEmailModalDisplay"
+            style="font-weight: bold; color: #333; font-size: 14px; padding: 4px 0; word-break: break-all;">-</div>
+        </div>
+
+        <div style="height: 1px; background: #eee; margin: 16px 0;"></div>
+
+        <div>
+          <button type="button" class="btn-primary" style="background: #e53935; width: 100%;"
+            onclick="handleLogout(); closeUserModal();">
+            Se déconnecter
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal Aide -->
   <div id="helpModal" class="modal-overlay" onclick="closeHelpModalOnOverlay(event)">
     <div class="modal-card">
@@ -367,6 +384,50 @@
     </div>
   </div>
 
+  <!-- Modal de confirmation pour vider la grille -->
+  <div id="clearGridModal" class="modal-overlay" onclick="closeClearModalOnOverlay(event)">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Vider la grille</h3>
+        <button class="modal-close" onclick="closeClearModal()">&times;</button>
+      </div>
+      <div class="modal-body" style="text-align: center;">
+        <p style="color: #333; margin-top: 5px; margin-bottom: 24px; font-size: 14px;">
+          Êtes-vous sûr de vouloir vider toute la grille ? Cette action est irréversible.
+        </p>
+        <div style="display: flex; justify-content: center; gap: 12px;">
+          <button type="button" class="btn-primary" style="background: #ccc; color: #333;"
+            onclick="closeClearModal()">Annuler</button>
+          <button type="button" class="btn-primary" style="background: #e53935;"
+            onclick="executeClearGrid()">Confirmer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Sélection du Thème -->
+  <div id="themeModal" class="modal-overlay" onclick="closeThemeModalOnOverlay(event)">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Choisir le thème</h3>
+        <button class="modal-close" onclick="closeThemeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="save-choice-intro">Sélectionnez le mode d'affichage de votre application :</p>
+        <div class="save-choice-row">
+          <button class="btn-save-choice" onclick="selectThemeAndClose('light')">
+            <span class="material-symbols-outlined">light_mode</span>
+            Thème clair
+          </button>
+          <button class="btn-save-choice" onclick="selectThemeAndClose('dark')">
+            <span class="material-symbols-outlined">dark_mode</span>
+            Thème sombre
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal Restauration de la grille précédente -->
   <div id="restoreModal" class="modal-overlay">
     <div class="modal-card">
@@ -381,8 +442,8 @@
             <span class="material-symbols-outlined">history</span>
             Restaurer la grille
           </button>
-     
-           <button class="btn-save-choice" onclick="openSession()">
+
+          <button class="btn-save-choice" onclick="openSession()">
             <span class="material-symbols-outlined">folder_open</span>
             Ouvrir une grille
           </button>

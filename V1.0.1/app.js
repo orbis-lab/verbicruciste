@@ -39,6 +39,7 @@ let startX = 0, startY = 0;
 let hasMoved = false;
 let clickStartX = 0;
 let clickStartY = 0;
+let USER = {}
 
 window.init = function () {
   const startTime = Date.now();
@@ -113,7 +114,7 @@ function initPanAndZoomGrid() {
 
   if (!elementEditor || !editorContainer) return;
 
-  setTransform = function() {
+  setTransform = function () {
     elementEditor.style.transform = `translate(${pointX}px, ${pointY}px) scale(${scale})`;
     elementEditor.style.transformOrigin = "0 0";
     updateZoomDisplay();
@@ -311,7 +312,7 @@ function updateGridDisplay() {
   grid.style.gridTemplateRows = `repeat(${ROWS}, var(--cell))`;
 
   render();
-  
+
   // --- AJOUT : Recalcule la taille physique et le centrage lors du changement de dimensions ---
   updateGridGeometry();
 }
@@ -949,7 +950,6 @@ function setArrow(direction) { if (selected !== null && cells[selected].type ===
 function updateHalfDefinition(which, value) { if (selected !== null && cells[selected].type === "double") { cells[selected][which].definition = value.toUpperCase(); const grid = document.getElementById("grid"); if (grid.children[selected]) { const editables = grid.children[selected].querySelectorAll(".def-editable"); const idx = which === "top" ? 0 : 1; if (editables[idx] && editables[idx] !== document.activeElement) editables[idx].innerText = cells[selected][which].definition; } persistSession(); } }
 
 function clearCell() { if (selected === null) return; cells[selected] = emptyCell(); render(); }
-function clearGrid() { if (confirm("Vider toute la grille ?")) { cells = Array.from({ length: COLS * ROWS }, emptyCell); selected = null; render(); } }
 
 function newGrid() { openSettingsModal(true); }
 
@@ -1158,7 +1158,7 @@ async function loadSelectedGrid(name) {
       COLS = 13;
       ROWS = 17;
       cells = data;
-      currentGridId = null; 
+      currentGridId = null;
     } else {
       // Nouvelle structure objet
       COLS = data.cols;
@@ -1169,15 +1169,15 @@ async function loadSelectedGrid(name) {
 
     currentGridName = name;
     selected = null;
-    
+
     // 1. On met à jour l'affichage de la grille et des dimensions
     updateGridDisplay();
-    
+
     // 2. On force le recalcul géométrique et le centrage immédiatement après
     if (typeof updateGridGeometry === 'function') {
       updateGridGeometry();
     }
-    
+
     closeLoadModal();
   }
 }
@@ -1252,14 +1252,14 @@ function restorePreviousSession() {
   sessionRestorePending = false;
   pendingSessionData = null;
   selected = null;
-  
+
   updateGridDisplay();
-  
+
   // Ajout ici aussi pour la session restaurée au démarrage
   if (typeof updateGridGeometry === 'function') {
     updateGridGeometry();
   }
-  
+
   closeRestoreModal();
 }
 
@@ -1402,6 +1402,7 @@ async function handleLogin(event) {
       body: JSON.stringify({ email, password })
     });
     const data = await response.json();
+    USER = data.user
 
     if (data.success) {
       document.getElementById('authModal').style.display = 'none';
@@ -1457,17 +1458,31 @@ async function handleLogout() {
 // Vérifier si l'utilisateur est connecté au chargement de l'application
 async function checkUserSession() {
   try {
-    const response = await fetch('./api/load_grids.php');
+    const response = await fetch('./api/user.php', {
+      method: 'GET',
+      credentials: 'include' // Très important pour transmettre le cookie de session
+    });
+
     if (response.status === 401) {
+      // Non connecté : on affiche la modale de login
       document.getElementById('authModal').style.display = 'flex';
       document.getElementById('userMenuContainer').style.display = 'none';
-    } else {
-      // CORRECTION : Suppression du point dans 'authModal'
+      return;
+    }
+
+    const data = await response.json();
+
+    if (data.success && data.user) {
+      // L'utilisateur est reconnu grâce à sa session, PAS BESOIN de se reloguer !
+      USER = data.user;
+
       document.getElementById('authModal').style.display = 'none';
       document.getElementById('userMenuContainer').style.display = 'inline-block';
+
+      // Ici tu peux aussi rafraîchir l'affichage de son nom dans l'UI si besoin
     }
   } catch (err) {
-    document.getElementById('authModal').style.display = 'flex';
+    console.error("Erreur lors de la vérification de session :", err);
   }
 }
 
@@ -1628,5 +1643,112 @@ async function deleteSavedGrid(name, gridId) {
   } catch (err) {
     console.error("Erreur réseau :", err);
     alert("Impossible de contacter le serveur pour la suppression.");
+  }
+}
+
+
+// Ouvre le modal de confirmation pour vider la grille
+function clearGrid() {
+  const modal = document.getElementById("clearGridModal");
+  if (modal) {
+    modal.classList.add("active");
+  } else {
+    // Fallback de sécurité si le modal HTML n'est pas encore présent
+    if (confirm("Vider toute la grille ?")) {
+      executeClearGrid();
+    }
+  }
+}
+
+// Ferme le modal
+function closeClearModal() {
+  const modal = document.getElementById("clearGridModal");
+  if (modal) {
+    modal.classList.remove("active");
+  }
+}
+
+// Ferme le modal si l'on clique sur l'arrière-plan grisé
+function closeClearModalOnOverlay(event) {
+  if (event.target.id === "clearGridModal") {
+    closeClearModal();
+  }
+}
+
+// Exécute réellement le nettoyage de la grille après confirmation
+function executeClearGrid() {
+  cells = Array.from({ length: COLS * ROWS }, emptyCell);
+  selected = null;
+  render();
+  closeClearModal();
+}
+
+
+// Ouvre le modal de sélection du thème
+function openThemeModal() {
+  const modal = document.getElementById("themeModal");
+  if (modal) {
+    modal.classList.add("active");
+  }
+}
+
+// Ferme le modal de sélection du thème
+function closeThemeModal() {
+  const modal = document.getElementById("themeModal");
+  if (modal) {
+    modal.classList.remove("active");
+  }
+}
+
+// Ferme le modal si l'on clique sur l'arrière-plan grisé
+function closeThemeModalOnOverlay(event) {
+  if (event.target.id === "themeModal") {
+    closeThemeModal();
+  }
+}
+
+// Applique le thème choisi et ferme le modal
+function selectThemeAndClose(themeName) {
+  setTheme(themeName); // Appelle ta logique existante qui applique le thème (ex: dark-theme)
+  closeThemeModal();
+}
+
+// Ouvre le modal de gestion du compte et charge les infos
+function openUserModal() {
+  console.log(USER)
+  const modal = document.getElementById("userModal");
+  if (modal) {
+    modal.classList.add("active");
+
+    // Récupération de l'e-mail
+    const emailSpan = document.getElementById("userEmailDisplay");
+    const emailModalDisplay = document.getElementById("userEmailModalDisplay");
+    if (emailModalDisplay) {
+      emailModalDisplay.textContent = USER.email;
+    }
+
+    // Récupération du nom / prénom (adapte les clés selon ton système d'authentification)
+    const nameModalDisplay = document.getElementById("userNameModalDisplay");
+    if (nameModalDisplay) {
+      // Exemple : si tu stockes séparément ou dans un objet JSON 'currentUser'
+      const firstName = USER.first_name || '';
+      const lastName = USER.last_name || '';
+      const fullName = (firstName || lastName) ? `${firstName} ${lastName}`.trim() : "Utilisateur";
+
+      nameModalDisplay.textContent = fullName;
+    }
+  }
+}
+
+function closeUserModal() {
+  const modal = document.getElementById("userModal");
+  if (modal) {
+    modal.classList.remove("active");
+  }
+}
+
+function closeUserModalOnOverlay(event) {
+  if (event.target.id === "userModal") {
+    closeUserModal();
   }
 }
