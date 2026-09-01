@@ -88,6 +88,16 @@ window.init = function () {
       menu.classList.remove('active');
     }
   });
+
+  // --- Menu burger mobile : refermé automatiquement dès qu'une action de la
+  // toolbar est déclenchée (chaque bouton ouvre de toute façon son propre
+  // modal, inutile de laisser le tiroir latéral ouvert par-dessus). ---
+  const topbarEl = document.querySelector('.topbar');
+  if (topbarEl) {
+    topbarEl.addEventListener('click', (event) => {
+      if (event.target.closest('.icon-btn')) closeMobileMenu();
+    });
+  }
 };
 
 
@@ -285,6 +295,18 @@ function initPanAndZoomGrid() {
       endPan();
     }
   });
+
+  // --- BLOCAGE DU GESTE NATIF DE PINCEMENT (iOS/Safari) ---
+  // Sur iOS, en plus des événements `touch*` standards ci-dessus, Safari émet
+  // ses propres événements `gesture*` (non standards) pour le pincement à
+  // deux doigts, et peut faire zoomer nativement toute la PAGE si rien ne
+  // s'y oppose — même si `event.preventDefault()` est déjà appelé sur
+  // `touchmove`. On bloque donc explicitement ces gestes sur la zone de
+  // l'éditeur pour laisser notre propre gestion du zoom (ci-dessus) prendre
+  // seule la main.
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(evt => {
+    editorContainer.addEventListener(evt, (event) => { event.preventDefault(); }, { passive: false });
+  });
 }
 // Nouvelle fonction pour recalculer dynamiquement la taille et le centrage de la grille
 function updateGridGeometry() {
@@ -298,6 +320,19 @@ function updateGridGeometry() {
   const gridPixelWidth = COLS * computedCellSize;
   const gridPixelHeight = ROWS * computedCellSize;
 
+  // --- ÉCHELLE AUTOMATIQUE ---
+  // Plutôt qu'une échelle fixe, on calcule le zoom qui permet à la grille de
+  // tenir entièrement (horizontalement ET verticalement) dans l'espace
+  // disponible de .editor, en conservant une petite marge esthétique tout
+  // autour. Fonctionne aussi bien sur desktop que sur mobile puisque tout
+  // est dérivé de la taille réelle (getBoundingClientRect) de .editor.
+  const margin = 24; // marge esthétique (px) conservée entre la grille et les bords de .editor
+  const availableWidth = Math.max(containerRect.width - margin * 2, 50);
+  const availableHeight = Math.max(containerRect.height - margin * 2, 50);
+  const autoScale = Math.min(availableWidth / gridPixelWidth, availableHeight / gridPixelHeight);
+  scale = Math.max(0.2, Math.min(autoScale, 2.5));
+
+  // --- CENTRAGE ---
   pointX = (containerRect.width - (gridPixelWidth * scale)) / 2;
   pointY = (containerRect.height - (gridPixelHeight * scale)) / 2;
 
@@ -378,8 +413,23 @@ function updateGridDisplay() {
   document.getElementById('gridDimensionsDisplay').textContent = `Grille de ${COLS} colonnes × ${ROWS} lignes`;
 
   const grid = document.getElementById("grid");
-  grid.style.gridTemplateColumns = `repeat(${COLS}, var(--cell))`;
-  grid.style.gridTemplateRows = `repeat(${ROWS}, var(--cell))`;
+
+  // On énumère explicitement chaque piste plutôt que d'utiliser
+  // `repeat(N, var(--cell))` : certains moteurs de rendu (notamment lors de
+  // l'impression) accumulent de très légers écarts d'arrondi entre pistes
+  // répétées, écart qui se retrouve entièrement absorbé par la DERNIÈRE
+  // ligne/colonne et la rend visiblement plus haute/large que les autres.
+  // Une liste explicite fixe chaque piste indépendamment, sans accumulation
+  // possible.
+  grid.style.gridTemplateColumns = Array(COLS).fill('var(--cell)').join(' ');
+  grid.style.gridTemplateRows = Array(ROWS).fill('var(--cell)').join(' ');
+
+  // On fige également une largeur/hauteur explicite, égale à la somme EXACTE
+  // des pistes, pour empêcher le conteneur `.grid` de redistribuer un
+  // éventuel reliquat d'espace (dû à l'arrondi) dans la dernière ligne.
+  const computedCellSize = parseFloat(getComputedStyle(grid).getPropertyValue('--cell')) || 54;
+  grid.style.width = `${COLS * computedCellSize}px`;
+  grid.style.height = `${ROWS * computedCellSize}px`;
 
   render();
 
@@ -1388,23 +1438,50 @@ function closeHelpModal() { document.getElementById("helpModal").classList.remov
 function closeHelpModalOnOverlay(event) { if (event.target.id === "helpModal") closeHelpModal(); }
 
 // ==========================================================================
-// Panneaux latéraux mobiles (aside affiché en superposition de la grille)
+// Modals mobiles indépendants (Sélection / Grille / Mots)
+// ==========================================================================
+// Chaque section (`.main-section`) peut être ouverte individuellement en
+// superposition de la grille, indépendamment des deux autres, via son propre
+// bouton dans la barre de navigation mobile. L'ouverture/fermeture ne touche
+// jamais `scale`/`pointX`/`pointY` : le zoom et la position de la grille
+// restent donc inchangés pendant que le modal est affiché.
+
+let openSectionId = null;
+
+function openSectionModal(id) {
+  closeAllSectionModals();
+  const el = document.getElementById(id);
+  if (el) el.classList.add("mobile-open");
+  const backdrop = document.getElementById("mobileSectionBackdrop");
+  if (backdrop) backdrop.classList.add("active");
+  openSectionId = id;
+}
+
+function closeAllSectionModals() {
+  document.querySelectorAll(".main-section.mobile-open").forEach(el => el.classList.remove("mobile-open"));
+  const backdrop = document.getElementById("mobileSectionBackdrop");
+  if (backdrop) backdrop.classList.remove("active");
+  openSectionId = null;
+}
+
+// ==========================================================================
+// Menu burger mobile (remplace la toolbar visible en permanence sur mobile)
 // ==========================================================================
 
-function openMobilePanel(side) {
-  const aside = document.querySelector(`aside.${side}`);
-  if (aside) aside.classList.add("mobile-open");
+function toggleMobileMenu(event) {
+  if (event) event.stopPropagation();
+  const topbar = document.querySelector(".topbar");
+  const backdrop = document.getElementById("mobileMenuBackdrop");
+  if (!topbar) return;
+  const isOpen = topbar.classList.toggle("mobile-menu-open");
+  if (backdrop) backdrop.classList.toggle("active", isOpen);
 }
 
-function closeMobilePanel(side) {
-  const aside = document.querySelector(`aside.${side}`);
-  if (aside) aside.classList.remove("mobile-open");
-}
-
-// Ferme le panneau lorsqu'on clique en dehors de son contenu (sur le fond
-// assombri de la superposition), à l'image du comportement des modals.
-function closeMobilePanelOnOverlay(event, side) {
-  if (event.target === event.currentTarget) closeMobilePanel(side);
+function closeMobileMenu() {
+  const topbar = document.querySelector(".topbar");
+  const backdrop = document.getElementById("mobileMenuBackdrop");
+  if (topbar) topbar.classList.remove("mobile-menu-open");
+  if (backdrop) backdrop.classList.remove("active");
 }
 
 function importJSON(event) {

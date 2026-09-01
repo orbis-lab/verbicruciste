@@ -260,6 +260,15 @@
       filter: invert(0.8);
   }
 
+  /* L'impression doit toujours rester en thème clair, quel que soit le thème
+     actuellement sélectionné dans l'éditeur : le thème sombre reste actif à
+     l'écran mais n'a aucun effet sur la feuille imprimée. */
+  @media print {
+      html.dark-theme {
+          filter: none !important;
+      }
+  }
+
   /* Sélecteur de thème (icône "palette" + menu déroulant clair/sombre) */
   .theme-selector-wrapper {
       position: relative;
@@ -331,34 +340,43 @@
       font-size: 22px;
   }
 
-  /* Icônes latérales permettant, sur mobile, d'ouvrir les panneaux (aside)
-     en superposition de la grille. Masquées sur desktop où les panneaux
-     sont déjà visibles en permanence dans la mise en page. */
-  .lateral-toggle {
+  /* Bouton menu burger (mobile uniquement) : masqué sur desktop où la
+     toolbar reste affichée en permanence dans le header. */
+  .burger-btn {
       display: none;
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      background: rgba(255, 255, 255, 0.9);
-      backdrop-filter: blur(4px);
-      border: 1px solid #ddd;
-      color: #333;
-      border-radius: 50%;
-      width: 44px;
-      height: 44px;
+      border: none;
+      background: transparent;
+      color: white;
+      cursor: pointer;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      padding: 6px;
+      border-radius: 6px;
+  }
+
+  .burger-btn .material-symbols-outlined {
+      font-size: 26px;
+  }
+
+  /* Fond assombri commun aux tiroirs/modals mobiles (menu burger et modals
+     de section Sélection/Grille/Mots), masqué sur desktop. */
+  .mobile-menu-backdrop,
+  .mobile-section-backdrop {
+      display: none;
+  }
+
+  /* Barre de navigation mobile (Sélection / Grille / Mots), affichée sous le
+     header et au-dessus de la grille. Masquée sur desktop où ces sections
+     restent visibles en permanence dans les panneaux latéraux. */
+  .mobile-section-nav {
+      display: none;
+  }
+
+  .mobile-nav-btn {
+      border: none;
+      background: white;
+      color: #222;
       cursor: pointer;
-      z-index: 60;
-  }
-
-  .lateral-toggle-left {
-      left: 12px;
-  }
-
-  .lateral-toggle-right {
-      right: 12px;
   }
 
   #gridDimensionsDisplay {
@@ -540,6 +558,10 @@ background: white;
       flex: 1;
       min-width: 0;
       position: relative; /* Indispensable pour que le translate du JS se cale bien ici */
+      /* Empêche le navigateur (notamment Safari/iOS) de gérer nativement les
+         gestes tactiles (pan / pincement) sur cette zone, afin que notre
+         propre gestion JS du zoom/déplacement tactile prenne seule la main. */
+      touch-action: none;
       background-color: #ffffff;
 background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.4'%3E%3Cpath opacity='.5' d='M96 95h4v1h-4v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9zm-1 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9z'/%3E%3Cpath d='M6 5V0H5v5H0v1h5v94h1V6h94V5H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
      border: solid white 5px;
@@ -667,6 +689,11 @@ background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/s
     position: absolute;
     top: 0;
     left: 0;
+    /* Empêche toute redistribution d'un éventuel reliquat d'espace (dû à
+       l'arrondi des pistes) dans la dernière ligne/colonne : la largeur/
+       hauteur exactes sont de toute façon fixées explicitement en JS. */
+    align-content: start;
+    justify-content: start;
     border: 3px solid var(--line);
     border-radius: 10px;
     overflow: hidden;
@@ -1257,32 +1284,10 @@ background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/s
       font-style: italic;
   }
 
-  @media (max-width: 1100px) {
-      header {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 10px;
-      }
-
-      .app {
-          flex-direction: column;
-      }
-
-      aside {
-          width: 100%;
-          position: static;
-          max-height: none;
-      }
-
-      .editor {
-          width: 100%;
-      }
-
-      .grid {
-          margin: 0;
-      }
-  }
+  /* NOTE : les styles mobiles (header, aside, éditeur…) vivent désormais
+     exclusivement dans mobile.css (voir @import en tout début de fichier),
+     afin d'éviter tout conflit entre deux media queries « max-width: 1100px »
+     distinctes. */
 
   @media print {
       body {
@@ -1295,7 +1300,9 @@ background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/s
       aside,
       .modal-overlay,
       .zoom-badge,
-      .lateral-toggle {
+      .mobile-section-nav,
+      .mobile-menu-backdrop,
+      .mobile-section-backdrop {
           display: none !important;
       }
 
