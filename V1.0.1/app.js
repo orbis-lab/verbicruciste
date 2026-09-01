@@ -989,7 +989,7 @@ async function applySettings() {
       }
     }
   }
-  
+
   cells = newCells;
   selected = null;
 
@@ -1060,11 +1060,11 @@ async function confirmSave(destination) {
       return;
     }
     targetName = newName;
-    
+
     // --- CORRECTION CLÉ POUR "ENREGISTRER SOUS" ---
     // Puisqu'il s'agit d'un "Enregistrer sous", on doit impérativement 
     // détacher l'ID actuel pour forcer la création d'une nouvelle ligne en BDD.
-    currentGridId = null; 
+    currentGridId = null;
   }
 
   if (destination === "cloud") {
@@ -1118,28 +1118,28 @@ async function loadSelectedGrid(name) {
 
   console.log(savedGrids)
   console.log(data)
-  
+
   if (data) {
-    if (Array.isArray(data)) { 
+    if (Array.isArray(data)) {
       // Ancienne structure (simple tableau de cellules)
-      COLS = 13; 
-      ROWS = 17; 
-      cells = data; 
+      COLS = 13;
+      ROWS = 17;
+      cells = data;
       currentGridId = null; // Pas d'ID connu
-    } else { 
+    } else {
       // Nouvelle structure objet
-      COLS = data.cols; 
-      ROWS = data.rows; 
-      cells = data.cells; 
-      
+      COLS = data.cols;
+      ROWS = data.rows;
+      cells = data.cells;
+
       // --- LA CORRECTION EST ICI ---
       // On récupère l'ID de la grille (qu'il vienne de data.id ou de la structure globale)
-      currentGridId = data.id || null; 
+      currentGridId = data.id || null;
     }
-    
-    currentGridName = name; 
-    selected = null; 
-    updateGridDisplay(); 
+
+    currentGridName = name;
+    selected = null;
+    updateGridDisplay();
     closeLoadModal();
   }
 }
@@ -1219,6 +1219,20 @@ function restorePreviousSession() {
   closeRestoreModal();
 }
 
+
+function openSession() {
+  openLoadModal()
+  closeRestoreModal();
+}
+
+
+document.getElementById('btn-open-existing').addEventListener('click', () => {
+  // 1. Fermer le modal actuel (grille précédente trouvée)
+  closeModal('previous-grid-modal'); // Adaptez le nom de votre fonction/ID de fermeture
+
+  // 2. Ouvrir le modal des grilles préexistantes
+  openModal('existing-grids-modal'); // Adaptez avec l'ID du modal de la toolbar
+});
 function discardPreviousSession() {
   sessionRestorePending = false;
   pendingSessionData = null;
