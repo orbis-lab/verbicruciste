@@ -160,6 +160,67 @@ function initPanAndZoomGrid() {
 
       if (setTransform) setTransform();
     });
+
+    // --- GESTION DE DÉPLACEMENT (PAN - Souris et Tactile) ---
+  function startPan(clientX, clientY) {
+    isPanning = true;
+    hasMoved = false;
+    startX = clientX - pointX;
+    startY = clientY - pointY;
+    clickStartX = clientX;
+    clickStartY = clientY;
+    editorContainer.style.cursor = 'grabbing';
+  }
+
+  function movePan(clientX, clientY) {
+    if (!isPanning) return;
+    const moveDistance = Math.hypot(clientX - clickStartX, clientY - clickStartY);
+    if (moveDistance > 5) hasMoved = true;
+
+    if (hasMoved) {
+      pointX = clientX - startX;
+      pointY = clientY - startY;
+      if (setTransform) setTransform();
+    }
+  }
+
+  function endPan() {
+    if (isPanning) {
+      isPanning = false;
+      if (editorContainer) editorContainer.style.cursor = 'default';
+    }
+  }
+
+  // Événements Souris (PC)
+  editorContainer.addEventListener('mousedown', (event) => {
+    startPan(event.clientX, event.clientY);
+  });
+
+  window.addEventListener('mousemove', (event) => {
+    movePan(event.clientX, event.clientY);
+  });
+
+  window.addEventListener('mouseup', () => {
+    endPan();
+  });
+
+  // Événements Tactiles (Mobile / Tablettes)
+  editorContainer.addEventListener('touchstart', (event) => {
+    if (event.touches.length === 1) {
+      const touch = event.touches[0];
+      startPan(touch.clientX, touch.clientY);
+    }
+  }, { passive: true });
+
+  window.addEventListener('touchmove', (event) => {
+    if (!isPanning || event.touches.length !== 1) return;
+    const touch = event.touches[0];
+    movePan(touch.clientX, touch.clientY);
+  }, { passive: true });
+
+  window.addEventListener('touchend', () => {
+    endPan();
+  });
   }
 
   // --- GESTION DU ZOOM À LA MOLETTE ---
@@ -1715,7 +1776,7 @@ function selectThemeAndClose(themeName) {
 
 // Ouvre le modal de gestion du compte et charge les infos
 function openUserModal() {
-  console.log(USER)
+
   const modal = document.getElementById("userModal");
   if (modal) {
     modal.classList.add("active");
