@@ -17,7 +17,7 @@ $userId = $_SESSION['user_id'];
 try {
     // Exemple : Récupérer les grilles associées à l'utilisateur depuis une table 'grids'
     // (Adaptez le nom de la table selon votre structure de base de données)
-    $stmt = $pdo->prepare("SELECT id, grid_name, grid_data, updated_at FROM grids WHERE user_id = ? ORDER BY updated_at DESC");
+    $stmt = $pdo->prepare("SELECT id, name, content, updated_at FROM grids WHERE user_id = ? ORDER BY updated_at DESC");
     $stmt->execute([$userId]);
     $grids = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -28,8 +28,5 @@ try {
 
 } catch (Exception $e) {
     http_response_code(500);
-    echo json_encode([
-        'success' => false, 
-        'error' => 'Erreur lors du chargement des grilles.'
-    ]);
+    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }

@@ -10,6 +10,7 @@
   } catch (e) { /* stockage indisponible : on ignore */ }
 })();
 
+let currentGridId = null; // ID de la grille active dans la base de données
 let COLS = 13;
 let ROWS = 17;
 let currentGridName = "Ma Grille";
@@ -87,6 +88,12 @@ window.init = function () {
     }
   });
 };
+
+
+// S'assure de lancer l'initialisation au chargement de la page
+window.addEventListener('DOMContentLoaded', () => {
+  window.init();
+});
 
 function updateZoomDisplay() {
   const zoomLevelDisplay = document.getElementById('zoomLevelDisplay');
@@ -227,18 +234,6 @@ function initPanAndZoomGrid() {
 }
 
 
-window.addEventListener('DOMContentLoaded', () => {
-  window.init();
-});
-// S'assure de lancer l'initialisation au chargement de la page
-window.addEventListener('DOMContentLoaded', () => {
-  window.init();
-});
-
-// S'assure de lancer l'initialisation au chargement de la page
-window.addEventListener('DOMContentLoaded', () => {
-  window.init();
-});
 
 function emptyCell() {
   return {
@@ -968,47 +963,74 @@ function openSettingsModal(isNew = false) {
 function closeSettingsModal() { document.getElementById("settingsModal").classList.remove("active"); }
 function closeSettingsModalOnOverlay(event) { if (event.target.id === "settingsModal") closeSettingsModal(); }
 
-function applySettings() {
+async function applySettings() {
   const newName = document.getElementById('settingName').value.trim() || "Grille Sans Nom";
   const newCols = parseInt(document.getElementById('settingCols').value, 10) || 13;
   const newRows = parseInt(document.getElementById('settingRows').value, 10) || 17;
 
-  if (isCreatingNewGrid) {
-    currentGridName = newName; COLS = newCols; ROWS = newRows;
-    cells = Array.from({ length: COLS * ROWS }, emptyCell);
-    selected = null;
-  } else {
-    // Si le nom a changé, mettre à jour l'entrée existante dans localStorage si elle y figurait
-    const savedGrids = getSavedGrids();
-    if (newName !== currentGridName) {
-      if (savedGrids[currentGridName]) {
-        savedGrids[newName] = savedGrids[currentGridName];
-        delete savedGrids[currentGridName];
-      }
-      currentGridName = newName;
-    }
+  const oldCols = COLS;
+  const oldRows = ROWS;
 
-    if (newCols !== COLS || newRows !== ROWS) {
-      const newCells = Array.from({ length: newCols * newRows }, emptyCell);
-      for (let r = 0; r < Math.min(ROWS, newRows); r++) {
-        for (let c = 0; c < Math.min(COLS, newCols); c++) {
-          newCells[r * newCols + c] = cells[r * COLS + c];
-        }
-      }
-      cells = newCells; COLS = newCols; ROWS = newRows; selected = null;
-    }
+  currentGridName = newName;
+  COLS = newCols;
+  ROWS = newRows;
 
-    // Sauvegarder automatiquement les changements mis à jour
-    if (savedGrids[currentGridName] || Object.keys(savedGrids).length > 0) {
-      savedGrids[currentGridName] = { version: 2, cols: COLS, rows: ROWS, cells: cells };
-      localStorage.setItem("motsFlechesGrids", JSON.stringify(savedGrids));
+  // --- RECONSTRUCTION PROPRE DU TABLEAU DE CELLULES ---
+  // On recrée toujours un tableau exact de la nouvelle taille (newCols * newRows)
+  const newCells = Array.from({ length: COLS * ROWS }, emptyCell);
+
+  // On récupère les anciennes données dans la limite des nouvelles dimensions
+  for (let r = 0; r < Math.min(oldRows, ROWS); r++) {
+    for (let c = 0; c < Math.min(oldCols, COLS); c++) {
+      const oldIndex = r * oldCols + c;
+      const newIndex = r * COLS + c;
+      if (cells[oldIndex]) {
+        newCells[newIndex] = { ...cells[oldIndex] }; // Copie propre de la cellule
+      }
     }
   }
+  
+  cells = newCells;
+  selected = null;
+
+  if (isCreatingNewGrid) {
+    // Nouvelle grille non encore enregistrée
+    currentGridId = null;
+  } else {
+    // --- ENVOI DE LA MISE À JOUR COMPLÈTE AU CLOUD ---
+    // Pour que le backend enregistre bien la nouvelle taille ET les cellules redimensionnées sans décalage
+    if (currentGridId) {
+      try {
+        const response = await fetch('./api/save_grid.php', { // Utilise save_grid pour persister dimensions + cellules d'un coup
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            id: currentGridId,
+            name: currentGridName,
+            cols: COLS,
+            rows: ROWS,
+            cells: cells
+          })
+        });
+        const data = await response.json();
+        if (!data.success) {
+          console.error("Erreur lors de la mise à jour des paramètres :", data.error);
+          alert("Erreur lors de l'enregistrement des paramètres dans le cloud.");
+        }
+      } catch (err) {
+        console.error("Erreur réseau :", err);
+        alert("Impossible de contacter le serveur pour mettre à jour les paramètres.");
+      }
+    } else {
+      saveGridToCloud({ version: 2, cols: COLS, rows: ROWS, cells: cells });
+    }
+  }
+
   updateGridDisplay();
   closeSettingsModal();
 }
 
-function getSavedGrids() { const data = localStorage.getItem("motsFlechesGrids"); return data ? JSON.parse(data) : {}; }
 
 let isSaveAsMode = false;
 
@@ -1028,7 +1050,7 @@ function closeSaveModalOnOverlay(event) {
   if (event.target.id === "saveModal") closeSaveModal();
 }
 
-function confirmSave(destination) {
+async function confirmSave(destination) {
   let targetName = currentGridName;
 
   if (isSaveAsMode) {
@@ -1038,18 +1060,41 @@ function confirmSave(destination) {
       return;
     }
     targetName = newName;
+    
+    // --- CORRECTION CLÉ POUR "ENREGISTRER SOUS" ---
+    // Puisqu'il s'agit d'un "Enregistrer sous", on doit impérativement 
+    // détacher l'ID actuel pour forcer la création d'une nouvelle ligne en BDD.
+    currentGridId = null; 
   }
 
-  currentGridName = targetName;
+  if (destination === "cloud") {
+    const savedGrids = await getSavedGrids();
 
-  if (destination === "browser") {
-    const savedGrids = getSavedGrids();
-    savedGrids[currentGridName] = { version: 2, cols: COLS, rows: ROWS, cells: cells };
-    localStorage.setItem("motsFlechesGrids", JSON.stringify(savedGrids));
+    // Si on fait un "Enregistrer sous" avec un nom qui existe déjà, ou un "Enregistrer" sur un autre nom
+    if (savedGrids.hasOwnProperty(targetName) && (isSaveAsMode || targetName !== currentGridName)) {
+      const overwrite = confirm(`Une grille portant le nom "${targetName}" existe déjà dans le cloud. Voulez-vous l'écraser ?`);
+      if (!overwrite) {
+        return;
+      }
+    }
+
+    currentGridName = targetName;
+
+    const payload = {
+      id: currentGridId, // Si null, le PHP comprendra qu'il faut insérer une nouvelle grille
+      name: currentGridName,
+      cols: COLS,
+      rows: ROWS,
+      version: 2,
+      cells: cells
+    };
+
+    saveGridToCloud(payload);
+
     updateGridDisplay();
     closeSaveModal();
-    alert(`Grille "${currentGridName}" enregistrée dans le navigateur.`);
   } else if (destination === "file") {
+    currentGridName = targetName;
     const exportData = { version: 2, name: currentGridName, cols: COLS, rows: ROWS, cells: cells };
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
@@ -1061,51 +1106,45 @@ function confirmSave(destination) {
   }
 }
 
-function openLoadModal() {
-  const modal = document.getElementById("loadModal"); const body = document.getElementById("modalBody");
-  const savedGrids = getSavedGrids(); const names = Object.keys(savedGrids);
 
-  let htmlStr = `
-    <div class="import-json-btn" onclick="document.getElementById('fileInput').click(); closeLoadModal();">
-      <span class="material-symbols-outlined">file_upload</span> Importer une grille depuis un fichier JSON
-    </div>
-    <div class="modal-separator"></div>
-  `;
 
-  if (names.length === 0) {
-    htmlStr += "<div class='modal-empty'>Aucune grille sauvegardée pour le moment.</div>";
-    body.innerHTML = htmlStr;
-  } else {
-    body.innerHTML = htmlStr;
-    names.forEach(name => {
-      const row = document.createElement("div"); row.className = "grid-item-row";
-      const nameSpan = document.createElement("span"); nameSpan.className = "grid-item-name"; nameSpan.textContent = name; nameSpan.onclick = () => loadSelectedGrid(name);
-      const delBtn = document.createElement("button"); delBtn.className = "grid-item-delete"; delBtn.title = "Supprimer"; delBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size:18px;">delete</span>`;
-      delBtn.onclick = (e) => { e.stopPropagation(); deleteSavedGrid(name); };
-      row.appendChild(nameSpan); row.appendChild(delBtn); body.appendChild(row);
-    });
-  }
-  modal.classList.add("active");
-}
 
 function closeLoadModal() { document.getElementById("loadModal").classList.remove("active"); }
 function closeLoadModalOnOverlay(event) { if (event.target.id === "loadModal") closeLoadModal(); }
 
-function loadSelectedGrid(name) {
-  const savedGrids = getSavedGrids(); const data = savedGrids[name];
+async function loadSelectedGrid(name) {
+  const savedGrids = await getSavedGrids();
+  const data = savedGrids[name];
+
+  console.log(savedGrids)
+  console.log(data)
+  
   if (data) {
-    if (Array.isArray(data)) { COLS = 13; ROWS = 17; cells = data; }
-    else { COLS = data.cols; ROWS = data.rows; cells = data.cells; }
-    currentGridName = name; selected = null; updateGridDisplay(); closeLoadModal();
+    if (Array.isArray(data)) { 
+      // Ancienne structure (simple tableau de cellules)
+      COLS = 13; 
+      ROWS = 17; 
+      cells = data; 
+      currentGridId = null; // Pas d'ID connu
+    } else { 
+      // Nouvelle structure objet
+      COLS = data.cols; 
+      ROWS = data.rows; 
+      cells = data.cells; 
+      
+      // --- LA CORRECTION EST ICI ---
+      // On récupère l'ID de la grille (qu'il vienne de data.id ou de la structure globale)
+      currentGridId = data.id || null; 
+    }
+    
+    currentGridName = name; 
+    selected = null; 
+    updateGridDisplay(); 
+    closeLoadModal();
   }
 }
 
-function deleteSavedGrid(name) {
-  if (confirm(`Supprimer la grille "${name}" ?`)) {
-    const savedGrids = getSavedGrids(); delete savedGrids[name];
-    localStorage.setItem("motsFlechesGrids", JSON.stringify(savedGrids)); openLoadModal();
-  }
-}
+
 
 // ==========================================================================
 // Restauration de la grille précédente
@@ -1128,26 +1167,40 @@ function persistSession() {
 // Vérifie, au démarrage, si une grille précédente a été sauvegardée. Si
 // c'est le cas (et qu'elle contient réellement du contenu), affiche le
 // modal de restauration et met en pause la persistance automatique.
-function checkPreviousSession() {
+async function checkPreviousSession() {
   try {
-    const raw = localStorage.getItem("motsFlechesLastSession");
-    if (!raw) return;
-    const data = JSON.parse(raw);
-    if (!data || !Array.isArray(data.cells) || data.cells.length === 0) return;
+    // On récupère les grilles depuis le cloud via ton mécanisme existant
+    const savedGrids = await getSavedGrids();
+    const gridNames = Object.keys(savedGrids);
 
-    const hasContent = data.cells.some(c =>
-      (c.letter && c.letter.trim()) ||
-      (c.definition && c.definition.trim()) ||
-      (c.top && c.top.definition && c.top.definition.trim()) ||
-      (c.bottom && c.bottom.definition && c.bottom.definition.trim())
-    );
-    if (!hasContent) return;
+    // S'il n'y a aucune grille dans le cloud, on ne fait rien
+    if (gridNames.length === 0) return;
 
+    // Optionnel : on peut trier ou récupérer la dernière modifiée/enregistrée si tu stockes une date, 
+    // ou tout simplement prendre la première/dernière de la liste.
+    // Prenons par exemple la dernière grille de la liste des grilles enregistrées :
+    const lastName = gridNames[gridNames.length - 1];
+    const lastGridData = savedGrids[lastName];
+
+    if (!lastGridData || !lastGridData.cells || lastGridData.cells.length === 0) return;
+
+    // On prépare les données pour la restauration potentielle
     sessionRestorePending = true;
-    pendingSessionData = data;
+    pendingSessionData = {
+      name: lastName,
+      cols: lastGridData.cols || 13,
+      rows: lastGridData.rows || 17,
+      cells: lastGridData.cells,
+      id: lastGridData.id || null
+    };
+
+    // Affichage de la modale de restauration
     const modal = document.getElementById("restoreModal");
     if (modal) modal.classList.add("active");
-  } catch (e) { /* données corrompues : on ignore et on démarre normalement */ }
+
+  } catch (e) {
+    console.error("Erreur lors de la vérification des sessions cloud :", e);
+  }
 }
 
 function restorePreviousSession() {
@@ -1156,6 +1209,7 @@ function restorePreviousSession() {
     ROWS = pendingSessionData.rows || 17;
     cells = pendingSessionData.cells;
     currentGridName = pendingSessionData.name || "Ma Grille";
+    currentGridId = pendingSessionData.id || null; // <--- Récupération indispensable de l'ID
   }
   sessionRestorePending = false;
   pendingSessionData = null;
@@ -1163,7 +1217,6 @@ function restorePreviousSession() {
   updateGridDisplay();
   initPanAndZoomGrid();
   closeRestoreModal();
-  persistSession();
 }
 
 function discardPreviousSession() {
@@ -1352,22 +1405,21 @@ async function handleLogout() {
 // Vérifier si l'utilisateur est connecté au chargement de l'application
 async function checkUserSession() {
   try {
-    // Vous pouvez créer un petit script ./api/check_session.php ou vérifier via une réponse API existante.
-    // Alternative simple : on tente de charger les grilles, si erreur 401, l'utilisateur n'est pas connecté.
-    const response = await fetch('./api/load_grids.php'); // Ou autre endpoint protégé
+    const response = await fetch('./api/load_grids.php');
     if (response.status === 401) {
       document.getElementById('authModal').style.display = 'flex';
       document.getElementById('userMenuContainer').style.display = 'none';
     } else {
+      // CORRECTION : Suppression du point dans 'authModal'
       document.getElementById('authModal').style.display = 'none';
       document.getElementById('userMenuContainer').style.display = 'inline-block';
-      // Optionnel : afficher l'email si l'API le renvoie
     }
   } catch (err) {
-    // En cas de doute, afficher la modale de sécurité
     document.getElementById('authModal').style.display = 'flex';
   }
 }
+
+
 
 // Événements d'interface au chargement du DOM
 document.addEventListener('DOMContentLoaded', () => {
@@ -1395,3 +1447,171 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+
+
+// Fonction pour sauvegarder la grille dans le cloud via save_grid.php
+// Fonction pour sauvegarder la grille dans le cloud via save_grid.php
+const saveGridToCloud = (gridData) => {
+  const payload = {
+    id: currentGridId, // <--- On envoie l'ID actuel au serveur
+    name: currentGridName,
+    cols: COLS,
+    rows: ROWS,
+    version: gridData.version || 2,
+    cells: gridData.cells || cells
+  };
+
+  fetch('api/save_grid.php', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // <--- On met à jour l'ID avec celui retourné (essentiel après un premier INSERT)
+        if (data.grid_id) {
+          currentGridId = data.grid_id;
+        }
+        console.log("Grille sauvegardée dans le cloud avec succès !");
+      } else {
+        console.error("Erreur lors de la sauvegarde :", data.error || data.message);
+      }
+    })
+    .catch(error => {
+      console.error("Erreur réseau :", error);
+    });
+};
+
+
+// Remplace le localStorage par un appel à l'API load_grids.php
+// Remplace le localStorage par un appel à l'API load_grids.php
+async function getSavedGrids() {
+  try {
+    const response = await fetch('./api/load_grids.php', {
+      method: 'GET',
+      credentials: 'include'
+    });
+    const data = await response.json();
+
+    if (data.success && data.grids) {
+      const gridsMap = {};
+      data.grids.forEach(grid => {
+        const rawContent = grid.content || grid.grid_data;
+        let gridContent = typeof rawContent === 'string'
+          ? JSON.parse(rawContent)
+          : rawContent;
+
+        // Si gridContent est un tableau simple, on le transforme en objet pour y glisser l'ID
+        if (Array.isArray(gridContent)) {
+          gridContent = {
+            cols: 13,
+            rows: 17,
+            cells: gridContent,
+            id: grid.id // <--- On injecte l'ID ici
+          };
+        } else if (gridContent && typeof gridContent === 'object') {
+          // Si c'est déjà un objet, on s'assure d'y attacher l'ID de la table grids
+          gridContent.id = grid.id || gridContent.id || null;
+        }
+
+        const gridName = grid.name || grid.grid_name || "Grille sans nom";
+        gridsMap[gridName] = gridContent;
+      });
+      return gridsMap;
+    }
+  } catch (err) {
+    console.error("Erreur lors du chargement des grilles depuis le cloud :", err);
+  }
+  return {};
+}
+
+// openLoadModal devient async pour attendre le retour de l'API
+async function openLoadModal() {
+  const modal = document.getElementById("loadModal");
+  const body = document.getElementById("modalBody");
+
+  const savedGrids = await getSavedGrids();
+  const names = Object.keys(savedGrids);
+
+  let htmlStr = `
+    <div class="import-json-btn" onclick="document.getElementById('fileInput').click(); closeLoadModal();">
+      <span class="material-symbols-outlined">file_upload</span> Importer une grille depuis un fichier JSON
+    </div>
+    <div class="modal-separator"></div>
+  `;
+
+  if (names.length === 0) {
+    htmlStr += "<div class='modal-empty'>Aucune grille sauvegardée dans le cloud pour le moment.</div>";
+    body.innerHTML = htmlStr;
+  } else {
+    body.innerHTML = htmlStr;
+    names.forEach(name => {
+      const gridInfo = savedGrids[name];
+      const gridId = gridInfo.id || null;
+
+      const row = document.createElement("div");
+      row.className = "grid-item-row";
+
+      const nameSpan = document.createElement("span");
+      nameSpan.className = "grid-item-name";
+      nameSpan.textContent = name;
+      nameSpan.onclick = () => loadSelectedGrid(name);
+
+      const delBtn = document.createElement("button");
+      delBtn.className = "grid-item-delete";
+      delBtn.title = "Supprimer";
+      delBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size:18px;">delete</span>`;
+
+      // Transmission correcte du nom et de l'ID à la fonction de suppression
+      delBtn.onclick = (e) => {
+        e.stopPropagation();
+        deleteSavedGrid(name, gridId);
+      };
+
+      row.appendChild(nameSpan);
+      row.appendChild(delBtn);
+      body.appendChild(row);
+    });
+  }
+  modal.classList.add("active");
+}
+
+
+
+// Fonction de suppression connectée à l'API PHP `delete_grid.php`[cite: 11]
+async function deleteSavedGrid(name, gridId) {
+  if (!confirm(`Supprimer la grille "${name}" du cloud ?`)) return;
+
+  try {
+    const response = await fetch('./api/delete_grid.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ id: gridId, name: name })
+    });
+
+    // Récupération de la réponse brute pour analyser d'éventuelles erreurs PHP
+    const rawText = await response.text();
+    let data;
+
+    try {
+      data = JSON.parse(rawText);
+    } catch (e) {
+      console.error("Réponse serveur invalide (non-JSON) :", rawText);
+      alert("Erreur serveur : Le script PHP a renvoyé du code HTML ou une erreur (voir la console).");
+      return;
+    }
+
+    if (data.success) {
+      openLoadModal();
+    } else {
+      alert(data.error || "Erreur lors de la suppression.");
+    }
+  } catch (err) {
+    console.error("Erreur réseau :", err);
+    alert("Impossible de contacter le serveur pour la suppression.");
+  }
+}
