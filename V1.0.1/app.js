@@ -105,42 +105,28 @@ function updateZoomDisplay() {
 
 // Fonction dédiée à la gestion du Pan (glissement) et du Zoom de la grille
 // Fonction dédiée à la gestion du Pan (glissement) et du Zoom de la grille
+let setTransform = null; // Variable globale pour stocker la fonction de transformation
+
 function initPanAndZoomGrid() {
   const editorContainer = document.querySelector('.editor');
   const elementEditor = document.querySelector('.grid');
 
   if (!elementEditor || !editorContainer) return;
 
-  function setTransform() {
+  setTransform = function() {
     elementEditor.style.transform = `translate(${pointX}px, ${pointY}px) scale(${scale})`;
     elementEditor.style.transformOrigin = "0 0";
     updateZoomDisplay();
-  }
+  };
 
-  // --- CENTRAGE GÉOMÉTRIQUE PARFAIT DU MILIEU DE LA GRILLE ---
-  const containerRect = editorContainer.getBoundingClientRect();
-  const computedCellSize = parseFloat(getComputedStyle(elementEditor).getPropertyValue('--cell')) || 54;
+  // On délègue le centrage géométrique à une fonction externe réutilisable
+  updateGridGeometry();
 
-  const gridPixelWidth = COLS * computedCellSize;
-  const gridPixelHeight = ROWS * computedCellSize;
-
-  // Centrage indépendant du niveau de zoom initial : la formule prend déjà
-  // en compte `scale` dans le calcul de la taille rendue de la grille
-  // (gridPixelWidth/Height * scale), donc le résultat est centré quelle que
-  // soit la valeur initiale de `scale`. On n'impose plus de valeur plancher
-  // (Math.max(10, ...)) : celle-ci empêchait un centrage exact dès que la
-  // grille était plus grande que le conteneur.
-  pointX = (containerRect.width - (gridPixelWidth * scale)) / 2;
-  pointY = (containerRect.height - (gridPixelHeight * scale)) / 2;
-
-  setTransform();
-
-  // --- GESTION DES BOUTONS DU BADGE DE ZOOM (Placés une seule fois ici) ---
+  // --- GESTION DES BOUTONS DU BADGE DE ZOOM ---
   const zoomInBtn = document.getElementById('zoomInBtn');
   const zoomOutBtn = document.getElementById('zoomOutBtn');
 
   if (zoomInBtn && zoomOutBtn) {
-    // Suppression d'éventuels anciens écouteurs pour éviter les doublons
     const newZoomIn = zoomInBtn.cloneNode(true);
     const newZoomOut = zoomOutBtn.cloneNode(true);
     zoomInBtn.parentNode.replaceChild(newZoomIn, zoomInBtn);
@@ -157,7 +143,7 @@ function initPanAndZoomGrid() {
       pointX = centerX - (centerX - pointX) * (scale / prevScale);
       pointY = centerY - (centerY - pointY) * (scale / prevScale);
 
-      setTransform();
+      if (setTransform) setTransform();
     });
 
     newZoomOut.addEventListener('click', () => {
@@ -171,7 +157,7 @@ function initPanAndZoomGrid() {
       pointX = centerX - (centerX - pointX) * (scale / prevScale);
       pointY = centerY - (centerY - pointY) * (scale / prevScale);
 
-      setTransform();
+      if (setTransform) setTransform();
     });
   }
 
@@ -195,10 +181,10 @@ function initPanAndZoomGrid() {
     pointX = mouseX - (mouseX - pointX) * (scale / prevScale);
     pointY = mouseY - (mouseY - pointY) * (scale / prevScale);
 
-    setTransform();
+    if (setTransform) setTransform();
   }, { passive: false });
 
-  // --- GESTION DU DÉPLACEMENT (PAN) ---
+  // --- GESTION DE DÉPLACEMENT (PAN) ---
   editorContainer.addEventListener('mousedown', (event) => {
     isPanning = true;
     hasMoved = false;
@@ -211,17 +197,13 @@ function initPanAndZoomGrid() {
 
   window.addEventListener('mousemove', (event) => {
     if (!isPanning) return;
-
     const moveDistance = Math.hypot(event.clientX - clickStartX, event.clientY - clickStartY);
-
-    if (moveDistance > 5) {
-      hasMoved = true;
-    }
+    if (moveDistance > 5) hasMoved = true;
 
     if (hasMoved) {
       pointX = event.clientX - startX;
       pointY = event.clientY - startY;
-      setTransform();
+      if (setTransform) setTransform();
     }
   });
 
@@ -233,6 +215,23 @@ function initPanAndZoomGrid() {
   });
 }
 
+// Nouvelle fonction pour recalculer dynamiquement la taille et le centrage de la grille
+function updateGridGeometry() {
+  const editorContainer = document.querySelector('.editor');
+  const elementEditor = document.querySelector('.grid');
+  if (!elementEditor || !editorContainer) return;
+
+  const containerRect = editorContainer.getBoundingClientRect();
+  const computedCellSize = parseFloat(getComputedStyle(elementEditor).getPropertyValue('--cell')) || 54;
+
+  const gridPixelWidth = COLS * computedCellSize;
+  const gridPixelHeight = ROWS * computedCellSize;
+
+  pointX = (containerRect.width - (gridPixelWidth * scale)) / 2;
+  pointY = (containerRect.height - (gridPixelHeight * scale)) / 2;
+
+  if (setTransform) setTransform();
+}
 
 
 function emptyCell() {
@@ -312,6 +311,9 @@ function updateGridDisplay() {
   grid.style.gridTemplateRows = `repeat(${ROWS}, var(--cell))`;
 
   render();
+  
+  // --- AJOUT : Recalcule la taille physique et le centrage lors du changement de dimensions ---
+  updateGridGeometry();
 }
 
 function render() {
@@ -1150,30 +1152,32 @@ async function loadSelectedGrid(name) {
   const savedGrids = await getSavedGrids();
   const data = savedGrids[name];
 
-  console.log(savedGrids)
-  console.log(data)
-
   if (data) {
     if (Array.isArray(data)) {
       // Ancienne structure (simple tableau de cellules)
       COLS = 13;
       ROWS = 17;
       cells = data;
-      currentGridId = null; // Pas d'ID connu
+      currentGridId = null; 
     } else {
       // Nouvelle structure objet
       COLS = data.cols;
       ROWS = data.rows;
       cells = data.cells;
-
-      // --- LA CORRECTION EST ICI ---
-      // On récupère l'ID de la grille (qu'il vienne de data.id ou de la structure globale)
       currentGridId = data.id || null;
     }
 
     currentGridName = name;
     selected = null;
+    
+    // 1. On met à jour l'affichage de la grille et des dimensions
     updateGridDisplay();
+    
+    // 2. On force le recalcul géométrique et le centrage immédiatement après
+    if (typeof updateGridGeometry === 'function') {
+      updateGridGeometry();
+    }
+    
     closeLoadModal();
   }
 }
@@ -1243,16 +1247,21 @@ function restorePreviousSession() {
     ROWS = pendingSessionData.rows || 17;
     cells = pendingSessionData.cells;
     currentGridName = pendingSessionData.name || "Ma Grille";
-    currentGridId = pendingSessionData.id || null; // <--- Récupération indispensable de l'ID
+    currentGridId = pendingSessionData.id || null;
   }
   sessionRestorePending = false;
   pendingSessionData = null;
   selected = null;
+  
   updateGridDisplay();
-  initPanAndZoomGrid();
+  
+  // Ajout ici aussi pour la session restaurée au démarrage
+  if (typeof updateGridGeometry === 'function') {
+    updateGridGeometry();
+  }
+  
   closeRestoreModal();
 }
-
 
 function openSession() {
   openLoadModal()
@@ -1260,18 +1269,13 @@ function openSession() {
 }
 
 
-document.getElementById('btn-open-existing').addEventListener('click', () => {
-  // 1. Fermer le modal actuel (grille précédente trouvée)
-  closeModal('previous-grid-modal'); // Adaptez le nom de votre fonction/ID de fermeture
-
-  // 2. Ouvrir le modal des grilles préexistantes
-  openModal('existing-grids-modal'); // Adaptez avec l'ID du modal de la toolbar
-});
 function discardPreviousSession() {
   sessionRestorePending = false;
   pendingSessionData = null;
   closeRestoreModal();
   persistSession();
+  // Ouvre directement le modal de paramètres en mode "Nouvelle grille"
+  newGrid();
 }
 
 function closeRestoreModal() {
@@ -1518,21 +1522,18 @@ async function getSavedGrids() {
           ? JSON.parse(rawContent)
           : rawContent;
 
-        // Si gridContent est un tableau simple, on le transforme en objet pour y glisser l'ID
-        if (Array.isArray(gridContent)) {
-          gridContent = {
-            cols: 13,
-            rows: 17,
-            cells: gridContent,
-            id: grid.id // <--- On injecte l'ID ici
-          };
-        } else if (gridContent && typeof gridContent === 'object') {
-          // Si c'est déjà un objet, on s'assure d'y attacher l'ID de la table grids
-          gridContent.id = grid.id || gridContent.id || null;
-        }
+        // Si le contenu est un objet structuré, on s'assure de récupérer les bonnes dimensions 
+        // en priorité depuis les colonnes dédiées de la table SQL (grid.cols et grid.rows)
+        let finalCols = grid.cols !== undefined ? parseInt(grid.cols, 10) : (gridContent.cols || 13);
+        let finalRows = grid.rows !== undefined ? parseInt(grid.rows, 10) : (gridContent.rows || 17);
+        let finalCells = Array.isArray(gridContent) ? gridContent : (gridContent.cells || []);
 
-        const gridName = grid.name || grid.grid_name || "Grille sans nom";
-        gridsMap[gridName] = gridContent;
+        gridsMap[grid.name] = {
+          id: grid.id,
+          cols: finalCols,
+          rows: finalRows,
+          cells: finalCells
+        };
       });
       return gridsMap;
     }

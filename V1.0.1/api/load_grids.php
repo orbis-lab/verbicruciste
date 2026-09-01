@@ -14,10 +14,10 @@ if (!isset($_SESSION['user_id'])) {
 
 $userId = $_SESSION['user_id'];
 
+// api/load_grids.php
 try {
-    // Exemple : Récupérer les grilles associées à l'utilisateur depuis une table 'grids'
-    // (Adaptez le nom de la table selon votre structure de base de données)
-    $stmt = $pdo->prepare("SELECT id, name, content, updated_at FROM grids WHERE user_id = ? ORDER BY updated_at DESC");
+    // MODIFICATION ICI : On sélectionne aussi cols et rows
+    $stmt = $pdo->prepare("SELECT id, name, cols, `rows`, content, updated_at FROM grids WHERE user_id = ? ORDER BY updated_at DESC");
     $stmt->execute([$userId]);
     $grids = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
