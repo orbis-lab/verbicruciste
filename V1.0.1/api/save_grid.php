@@ -31,6 +31,17 @@ $content  = json_encode($data['cells'] ?? []);
 try {
     $pdo->beginTransaction();
 
+    // --- VÉRIFICATION DE L'UNICITÉ DU NOM POUR CET UTILISATEUR ---
+    $stmtCheck = $pdo->prepare("SELECT id FROM grids WHERE user_id = ? AND name = ?");
+    $stmtCheck->execute([$userId, $name]);
+    $existingGrid = $stmtCheck->fetch();
+
+    // Si une grille avec ce même nom existe déjà et qu'il ne s'agit pas de la grille en cours de modification
+    if ($existingGrid && ($gridId === null || $existingGrid['id'] != $gridId)) {
+        throw new Exception("Vous possédez déjà une grille portant le nom '$name'.");
+    }
+    // -------------------------------------------------------------
+
     if ($gridId) {
         // Ajout des backticks autour de `rows`
         $stmt = $pdo->prepare("UPDATE grids SET name = ?, cols = ?, `rows` = ?, version = ?, content = ? WHERE id = ? AND user_id = ?");
@@ -57,6 +68,6 @@ try {
     if (isset($pdo) && $pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    http_response_code(500);
+    http_response_code(400); // Code 400 (Bad Request) ou 500 selon l'erreur
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }

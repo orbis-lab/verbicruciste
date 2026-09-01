@@ -989,7 +989,7 @@ const saveGridToCloud = (gridData) => {
         }
         console.log("Grille sauvegardée dans le cloud avec succès !");
       } else {
-        console.error("Erreur lors de la sauvegarde :", data.error || data.message);
+        alert("Erreur : " + (data.error || "Impossible de sauvegarder la grille."));
       }
     })
     .catch(error => {
