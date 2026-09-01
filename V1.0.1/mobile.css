@@ -1,0 +1,117 @@
+/* ==========================================================================
+   Styles spécifiques aux appareils mobiles.
+
+   Ce fichier est importé depuis style.css via `@import`. La spécification
+   CSS impose que `@import` soit placé avant toute autre règle : ses styles
+   se retrouvent donc tout en haut de la cascade, avant les règles "desktop"
+   déclarées plus bas dans style.css. Pour les sélecteurs qui partagent
+   exactement la même spécificité que leur équivalent desktop (ex: `header`,
+   `body`, `.app`, `.editor`), on utilise donc `!important` afin de garantir
+   que ces règles mobiles l'emportent bien lorsque le media query est actif.
+   Les sélecteurs plus spécifiques (ex: `aside.mobile-open`) l'emportent
+   naturellement et n'en ont pas besoin.
+   ========================================================================== */
+
+@media (max-width: 1100px) {
+
+  /* --- App plein écran, sans défilement de la page ---------------------- */
+  html,
+  body {
+    height: 100%;
+    overflow: hidden !important;
+  }
+
+  body {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  /* Le header (et donc sa toolbar) reste toujours visible en haut de
+     l'écran, même si la page venait à défiler. */
+  header {
+    flex-shrink: 0;
+    position: sticky !important;
+    top: 0;
+    z-index: 850;
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  /* --- L'éditeur occupe tout l'espace restant, sans marge ---------------- */
+  .app {
+    flex: 1 1 auto !important;
+    min-height: 0;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    overflow: hidden !important;
+  }
+
+  main {
+    height: auto !important;
+  }
+
+  .editor {
+    flex: 1 1 auto !important;
+    min-height: 0;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+  }
+
+  /* --- Panneaux latéraux (aside) : masqués, ouverts en superposition ----- */
+  aside {
+    display: none !important;
+  }
+
+  aside.mobile-open {
+    display: flex !important;
+    flex-direction: column;
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100% !important;
+    height: 100% !important;
+    max-height: none;
+    background: rgba(0, 0, 0, 0.45);
+    padding: 16px;
+    z-index: 950;
+    overflow-y: auto;
+  }
+
+  aside.left.mobile-open,
+  aside.right.mobile-open {
+    direction: ltr;
+  }
+
+  aside.mobile-open .inner-aside {
+    margin: 0;
+    direction: ltr;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* Bouton de fermeture, visible uniquement lorsque le panneau est ouvert
+     en superposition. */
+  aside .aside-close-btn {
+    display: flex !important;
+    align-self: flex-end;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  /* --- Icônes latérales d'ouverture des panneaux, superposées à la grille */
+  .lateral-toggle {
+    display: flex !important;
+  }
+}

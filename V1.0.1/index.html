@@ -49,6 +49,24 @@
             <span class="material-symbols-outlined">settings</span>
           </button>
 
+          <div class="theme-selector-wrapper">
+            <button class="icon-btn" onclick="toggleThemeMenu(event)" data-tooltip="Thème">
+              <span class="material-symbols-outlined">palette</span>
+            </button>
+            <div id="themeMenu" class="theme-menu">
+              <button class="theme-menu-item" data-theme="light" onclick="setTheme('light')">
+                <span class="material-symbols-outlined">light_mode</span> Thème clair
+              </button>
+              <button class="theme-menu-item" data-theme="dark" onclick="setTheme('dark')">
+                <span class="material-symbols-outlined">dark_mode</span> Thème sombre
+              </button>
+            </div>
+          </div>
+
+          <button class="icon-btn" onclick="openHelpModal()" data-tooltip="Aide">
+            <span class="material-symbols-outlined">help</span>
+          </button>
+
           <div class="topbar-separator"></div>
 
           <button class="icon-btn danger-btn" onclick="clearCell()" data-tooltip="Effacer case">
@@ -73,7 +91,10 @@
 
     <div class="app">
 
-      <aside class="left">
+      <aside class="left" onclick="closeMobilePanelOnOverlay(event, 'left')">
+        <button class="aside-close-btn" onclick="closeMobilePanel('left')" data-tooltip="Fermer">
+          <span class="material-symbols-outlined">close</span>
+        </button>
         <div class="inner-aside">
           
 
@@ -148,22 +169,10 @@
             </div>
           </div>
 
-          <div class="main-section">
-            <h1 class="main-section-tilte">Aide</h1>
-            <div class="info">
-              <strong>Utilisation :</strong><br>
-              1. Cliquez sur une case.<br>
-              2. Choisissez son type.<br>
-              3. Tapez une lettre pour passer à la suivante.
-              </br></br>
-              <strong>Navigation & Zoom :</strong><br>
-              1. Zoom : Utilisez la molette de la souris sur la grille.<br>
-              2. Déplacement : Cliquez sur le fond vide et glissez.
-            </div>
-          </div>
         </div>
       </aside>
       <main class="editor">
+        <img src="./banner.svg" alt="Logo" class="print-banner" />
         <div id="printTitle" class="print-title">Ma Grille</div>
         <div id="grid" class="grid"></div>
         <div class="zoom-badge">
@@ -175,9 +184,21 @@
             <span class="material-symbols-outlined">zoom_out</span>
           </button>
         </div>
+
+        <!-- Icônes latérales (mobile) : ouvrent les panneaux Sélection / Mots placés
+             en superposition de la grille -->
+        <button class="lateral-toggle lateral-toggle-left" onclick="openMobilePanel('left')" data-tooltip="Sélection">
+          <span class="material-symbols-outlined">tune</span>
+        </button>
+        <button class="lateral-toggle lateral-toggle-right" onclick="openMobilePanel('right')" data-tooltip="Mots placés">
+          <span class="material-symbols-outlined">format_list_bulleted</span>
+        </button>
       </main>
 
-      <aside class="right">
+      <aside class="right" onclick="closeMobilePanelOnOverlay(event, 'right')">
+        <button class="aside-close-btn" onclick="closeMobilePanel('right')" data-tooltip="Fermer">
+          <span class="material-symbols-outlined">close</span>
+        </button>
 
         <div class="inner-aside">
 
@@ -258,7 +279,49 @@
       </div>
     </div>
 
+    <!-- Modal Aide -->
+    <div id="helpModal" class="modal-overlay" onclick="closeHelpModalOnOverlay(event)">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Aide</h3>
+          <button class="modal-close" onclick="closeHelpModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="info">
+            <strong>Utilisation :</strong><br>
+            1. Cliquez sur une case.<br>
+            2. Choisissez son type.<br>
+            3. Tapez une lettre pour passer à la suivante.
+            <br><br>
+            <strong>Navigation & Zoom :</strong><br>
+            1. Zoom : Utilisez la molette de la souris sur la grille.<br>
+            2. Déplacement : Cliquez sur le fond vide et glissez.
+          </div>
+        </div>
+      </div>
+    </div>
 
+    <!-- Modal Restauration de la grille précédente -->
+    <div id="restoreModal" class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Grille précédente trouvée</h3>
+        </div>
+        <div class="modal-body">
+          <p class="save-choice-intro">Une grille précédente a été trouvée. Souhaitez-vous la restaurer ou commencer une nouvelle grille ?</p>
+          <div class="save-choice-row">
+            <button class="btn-save-choice" onclick="restorePreviousSession()">
+              <span class="material-symbols-outlined">history</span>
+              Restaurer la grille
+            </button>
+            <button class="btn-save-choice" onclick="discardPreviousSession()">
+              <span class="material-symbols-outlined">add_box</span>
+              Nouvelle grille
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
   </body>
 

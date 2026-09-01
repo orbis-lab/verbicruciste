@@ -1,9 +1,21 @@
 
 
+// Applique le thème sauvegardé le plus tôt possible (avant même le rendu du
+// <body>) afin d'éviter tout effet de flash entre thème clair et sombre.
+(function applyStoredThemeEarly() {
+  try {
+    if (localStorage.getItem("motsFlechesTheme") === "dark") {
+      document.documentElement.classList.add("dark-theme");
+    }
+  } catch (e) { /* stockage indisponible : on ignore */ }
+})();
+
 let COLS = 13;
 let ROWS = 17;
 let currentGridName = "Ma Grille";
 let isCreatingNewGrid = false;
+let sessionRestorePending = false;
+let pendingSessionData = null;
 
 let cells = [];
 let selected = null;
@@ -31,6 +43,15 @@ window.init = function () {
   const startTime = Date.now();
 
   cells = Array.from({ length: COLS * ROWS }, emptyCell);
+
+  // Vérifie si une grille précédente a été sauvegardée avant de lancer le
+  // premier rendu : si c'est le cas, la persistance automatique de la
+  // session est mise en pause (sessionRestorePending) le temps que
+  // l'utilisateur choisisse de la restaurer ou non, pour ne pas l'écraser
+  // avec la grille vierge fraîchement créée ci-dessus.
+  checkPreviousSession();
+  updateThemeMenuUI();
+
   updateGridDisplay();
 
   // Appel de la fonction pour le zoom et le déplacement
@@ -50,38 +71,21 @@ window.init = function () {
     }
   }, remainingTime);
 
-  // --- GESTION DE L'IMPRESSION PROpre ---
-  window.addEventListener('beforeprint', () => {
-      // Sauvegarde des valeurs actuelles avant impression
-      window._savedScale = scale;
-      window._savedPointX = pointX;
-      window._savedPointY = pointY;
+  // NOTE impression : l'échelle et la position utilisées à l'impression sont
+  // désormais entièrement gérées en CSS (voir la règle `@media print` dans
+  // style.css, qui force `transform: none !important` sur `.grid`). Cela
+  // garantit une échelle d'impression toujours indépendante du zoom/
+  // déplacement appliqués à l'écran, sans avoir besoin de manipuler `scale`,
+  // `pointX`/`pointY` ni le `transform` inline en JavaScript.
 
-      // Réinitialisation forcée pour l'impression (échelle 100% et centré ou par défaut)
-      scale = 1;
-      pointX = 0;
-      pointY = 0;
-      
-      const elementEditor = document.querySelector('.grid');
-      if (elementEditor) {
-          elementEditor.style.transform = `translate(0px, 0px) scale(1)`;
-      }
+  // --- Fermeture du menu de sélection du thème au clic en dehors ---
+  document.addEventListener('click', (event) => {
+    const wrapper = document.querySelector('.theme-selector-wrapper');
+    const menu = document.getElementById('themeMenu');
+    if (wrapper && menu && menu.classList.contains('active') && !wrapper.contains(event.target)) {
+      menu.classList.remove('active');
+    }
   });
-
-  window.addEventListener('afterprint', () => {
-      // Restauration du zoom et de la position de l'utilisateur après l'impression
-      if (window._savedScale !== undefined) {
-          scale = window._savedScale;
-          pointX = window._savedPointX;
-          pointY = window._savedPointY;
-
-          const elementEditor = document.querySelector('.grid');
-          if (elementEditor) {
-              elementEditor.style.transform = `translate(${pointX}px, ${pointY}px) scale(${scale})`;
-          }
-      }
-  });
-  
 };
 
 function updateZoomDisplay() {
@@ -113,11 +117,14 @@ function initPanAndZoomGrid() {
   const gridPixelWidth = COLS * computedCellSize;
   const gridPixelHeight = ROWS * computedCellSize;
 
+  // Centrage indépendant du niveau de zoom initial : la formule prend déjà
+  // en compte `scale` dans le calcul de la taille rendue de la grille
+  // (gridPixelWidth/Height * scale), donc le résultat est centré quelle que
+  // soit la valeur initiale de `scale`. On n'impose plus de valeur plancher
+  // (Math.max(10, ...)) : celle-ci empêchait un centrage exact dès que la
+  // grille était plus grande que le conteneur.
   pointX = (containerRect.width - (gridPixelWidth * scale)) / 2;
   pointY = (containerRect.height - (gridPixelHeight * scale)) / 2;
-
-  pointX = Math.max(10, pointX);
-  pointY = Math.max(10, pointY);
 
   setTransform();
 
@@ -343,10 +350,10 @@ function render() {
 
         if (e.key === "Backspace") {
           e.preventDefault(); cell.letter = ""; input.value = "";
-          updatePanel(); updatePlacedWordsList(); moveToNextLetter(-1);
+          updatePanel(); updatePlacedWordsList(); persistSession(); moveToNextLetter(-1);
         } else if (e.key.length === 1 && /[a-zA-ZÀ-ÿ]/.test(e.key)) {
           e.preventDefault(); const char = e.key.toUpperCase(); cell.letter = char; input.value = char;
-          updatePanel(); updatePlacedWordsList(); moveToNextLetter(1);
+          updatePanel(); updatePlacedWordsList(); persistSession(); moveToNextLetter(1);
         }
       });
       el.appendChild(input);
@@ -356,7 +363,7 @@ function render() {
       const editable = document.createElement("div");
       editable.className = "def-content"; editable.contentEditable = "true"; editable.innerText = cell.definition;
       editable.addEventListener("focus", () => { currentInputDir = cell.arrow; selectCellSilently(index); });
-      editable.addEventListener("input", e => { cell.definition = e.target.innerText.toUpperCase(); const sideInput = document.getElementById("definitionInput"); if (sideInput) sideInput.value = cell.definition; });
+      editable.addEventListener("input", e => { cell.definition = e.target.innerText.toUpperCase(); const sideInput = document.getElementById("definitionInput"); if (sideInput) sideInput.value = cell.definition; persistSession(); });
       el.appendChild(editable);
       const svg = createArrowSVG(cell.arrow, "full");
       if (svg) el.appendChild(svg);
@@ -370,8 +377,8 @@ function render() {
       editables[0].addEventListener("focus", () => { currentInputDir = "E"; selectCellSilently(index); const sideInput = document.getElementById("topDefinitionInput"); if (sideInput) sideInput.value = cell.top.definition; });
       editables[1].addEventListener("focus", () => { currentInputDir = "S"; selectCellSilently(index); const sideInput = document.getElementById("bottomDefinitionInput"); if (sideInput) sideInput.value = cell.bottom.definition; });
 
-      editables[0].addEventListener("input", e => { cell.top.definition = e.target.innerText.toUpperCase(); const sideInput = document.getElementById("topDefinitionInput"); if (sideInput) sideInput.value = cell.top.definition; });
-      editables[1].addEventListener("input", e => { cell.bottom.definition = e.target.innerText.toUpperCase(); const sideInput = document.getElementById("bottomDefinitionInput"); if (sideInput) sideInput.value = cell.bottom.definition; });
+      editables[0].addEventListener("input", e => { cell.top.definition = e.target.innerText.toUpperCase(); const sideInput = document.getElementById("topDefinitionInput"); if (sideInput) sideInput.value = cell.top.definition; persistSession(); });
+      editables[1].addEventListener("input", e => { cell.bottom.definition = e.target.innerText.toUpperCase(); const sideInput = document.getElementById("bottomDefinitionInput"); if (sideInput) sideInput.value = cell.bottom.definition; persistSession(); });
 
       const svgTop = createArrowSVG("E", "top"); if (svgTop) halves[0].appendChild(svgTop);
       const svgBottom = createArrowSVG("S", "bottom"); if (svgBottom) halves[1].appendChild(svgBottom);
@@ -383,6 +390,7 @@ function render() {
   });
 
   updatePanel(); updatePlacedWordsList();
+  persistSession();
 }
 
 function moveToNextLetter(step) {
@@ -939,9 +947,9 @@ async function fetchWordDefinition(word, resultContainerId) {
 }
 function fillWordInGrid(word, indexes) { for (let i = 0; i < indexes.length; i++) { if (i < word.length) cells[indexes[i]].letter = word[i]; } render(); }
 
-function updateDefinition(value) { if (selected !== null) { cells[selected].definition = value.toUpperCase(); const grid = document.getElementById("grid"); if (grid.children[selected]) { const def = grid.children[selected].querySelector(".def-content"); if (def && def !== document.activeElement) def.innerText = cells[selected].definition; } } }
+function updateDefinition(value) { if (selected !== null) { cells[selected].definition = value.toUpperCase(); const grid = document.getElementById("grid"); if (grid.children[selected]) { const def = grid.children[selected].querySelector(".def-content"); if (def && def !== document.activeElement) def.innerText = cells[selected].definition; } persistSession(); } }
 function setArrow(direction) { if (selected !== null && cells[selected].type === "definition") { cells[selected].arrow = direction; currentInputDir = direction; render(); } }
-function updateHalfDefinition(which, value) { if (selected !== null && cells[selected].type === "double") { cells[selected][which].definition = value.toUpperCase(); const grid = document.getElementById("grid"); if (grid.children[selected]) { const editables = grid.children[selected].querySelectorAll(".def-editable"); const idx = which === "top" ? 0 : 1; if (editables[idx] && editables[idx] !== document.activeElement) editables[idx].innerText = cells[selected][which].definition; } } }
+function updateHalfDefinition(which, value) { if (selected !== null && cells[selected].type === "double") { cells[selected][which].definition = value.toUpperCase(); const grid = document.getElementById("grid"); if (grid.children[selected]) { const editables = grid.children[selected].querySelectorAll(".def-editable"); const idx = which === "top" ? 0 : 1; if (editables[idx] && editables[idx] !== document.activeElement) editables[idx].innerText = cells[selected][which].definition; } persistSession(); } }
 
 function clearCell() { if (selected === null) return; cells[selected] = emptyCell(); render(); }
 function clearGrid() { if (confirm("Vider toute la grille ?")) { cells = Array.from({ length: COLS * ROWS }, emptyCell); selected = null; render(); } }
@@ -1097,6 +1105,131 @@ function deleteSavedGrid(name) {
     const savedGrids = getSavedGrids(); delete savedGrids[name];
     localStorage.setItem("motsFlechesGrids", JSON.stringify(savedGrids)); openLoadModal();
   }
+}
+
+// ==========================================================================
+// Restauration de la grille précédente
+// ==========================================================================
+
+// Sauvegarde silencieusement l'état courant de la grille (nom, dimensions,
+// cases) dans le localStorage, afin de pouvoir proposer sa restauration au
+// prochain chargement de la page. Mis en pause tant qu'une décision de
+// restauration est en attente (sessionRestorePending), pour ne pas écraser
+// la sauvegarde avec la grille vierge affichée en arrière-plan du modal.
+function persistSession() {
+  if (sessionRestorePending) return;
+  try {
+    localStorage.setItem("motsFlechesLastSession", JSON.stringify({
+      name: currentGridName, cols: COLS, rows: ROWS, cells: cells
+    }));
+  } catch (e) { /* stockage indisponible : on ignore silencieusement */ }
+}
+
+// Vérifie, au démarrage, si une grille précédente a été sauvegardée. Si
+// c'est le cas (et qu'elle contient réellement du contenu), affiche le
+// modal de restauration et met en pause la persistance automatique.
+function checkPreviousSession() {
+  try {
+    const raw = localStorage.getItem("motsFlechesLastSession");
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (!data || !Array.isArray(data.cells) || data.cells.length === 0) return;
+
+    const hasContent = data.cells.some(c =>
+      (c.letter && c.letter.trim()) ||
+      (c.definition && c.definition.trim()) ||
+      (c.top && c.top.definition && c.top.definition.trim()) ||
+      (c.bottom && c.bottom.definition && c.bottom.definition.trim())
+    );
+    if (!hasContent) return;
+
+    sessionRestorePending = true;
+    pendingSessionData = data;
+    const modal = document.getElementById("restoreModal");
+    if (modal) modal.classList.add("active");
+  } catch (e) { /* données corrompues : on ignore et on démarre normalement */ }
+}
+
+function restorePreviousSession() {
+  if (pendingSessionData) {
+    COLS = pendingSessionData.cols || 13;
+    ROWS = pendingSessionData.rows || 17;
+    cells = pendingSessionData.cells;
+    currentGridName = pendingSessionData.name || "Ma Grille";
+  }
+  sessionRestorePending = false;
+  pendingSessionData = null;
+  selected = null;
+  updateGridDisplay();
+  initPanAndZoomGrid();
+  closeRestoreModal();
+  persistSession();
+}
+
+function discardPreviousSession() {
+  sessionRestorePending = false;
+  pendingSessionData = null;
+  closeRestoreModal();
+  persistSession();
+}
+
+function closeRestoreModal() {
+  const modal = document.getElementById("restoreModal");
+  if (modal) modal.classList.remove("active");
+}
+
+// ==========================================================================
+// Sélecteur de thème (clair / sombre)
+// ==========================================================================
+
+function toggleThemeMenu(event) {
+  event.stopPropagation();
+  const menu = document.getElementById("themeMenu");
+  if (menu) menu.classList.toggle("active");
+  updateThemeMenuUI();
+}
+
+function setTheme(theme) {
+  document.documentElement.classList.toggle("dark-theme", theme === "dark");
+  try { localStorage.setItem("motsFlechesTheme", theme); } catch (e) { /* ignore */ }
+  updateThemeMenuUI();
+  const menu = document.getElementById("themeMenu");
+  if (menu) menu.classList.remove("active");
+}
+
+function updateThemeMenuUI() {
+  const isDark = document.documentElement.classList.contains("dark-theme");
+  document.querySelectorAll(".theme-menu-item").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.theme === (isDark ? "dark" : "light"));
+  });
+}
+
+// ==========================================================================
+// Modal Aide
+// ==========================================================================
+
+function openHelpModal() { document.getElementById("helpModal").classList.add("active"); }
+function closeHelpModal() { document.getElementById("helpModal").classList.remove("active"); }
+function closeHelpModalOnOverlay(event) { if (event.target.id === "helpModal") closeHelpModal(); }
+
+// ==========================================================================
+// Panneaux latéraux mobiles (aside affiché en superposition de la grille)
+// ==========================================================================
+
+function openMobilePanel(side) {
+  const aside = document.querySelector(`aside.${side}`);
+  if (aside) aside.classList.add("mobile-open");
+}
+
+function closeMobilePanel(side) {
+  const aside = document.querySelector(`aside.${side}`);
+  if (aside) aside.classList.remove("mobile-open");
+}
+
+// Ferme le panneau lorsqu'on clique en dehors de son contenu (sur le fond
+// assombri de la superposition), à l'image du comportement des modals.
+function closeMobilePanelOnOverlay(event, side) {
+  if (event.target === event.currentTarget) closeMobilePanel(side);
 }
 
 function importJSON(event) {
