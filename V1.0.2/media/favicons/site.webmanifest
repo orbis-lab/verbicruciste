@@ -1,7 +1,7 @@
 {
-  "name": "logo-invert",
-  "short_name": "logo-invert",
-  "description": "logo-invert - A Progressive Web App",
+  "name": "VerbiCruciste",
+  "short_name": "VerbiCruciste",
+  "description": "VerbiCruciste",
   "start_url": "/",
   "display": "standalone",
   "theme_color": "#000000",

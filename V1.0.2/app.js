@@ -85,6 +85,10 @@ window.init = async function () {
 // S'assure de lancer l'initialisation au chargement de la page
 window.addEventListener('DOMContentLoaded', () => {
   window.init();
+  document.getElementById('openKeyboardBtn').onclick = function () {
+    console.log("Bouton cliqué via JavaScript !");
+    requestKeyboardInput()
+  };
 });
 
 function updateZoomDisplay() {
@@ -403,18 +407,16 @@ function render() {
       input.maxLength = 1;
       input.value = cell.letter || "";
       input.setAttribute("autocomplete", "off");
-      input.readOnly = true; // Reste en lecture seule pour bloquer le clavier au toucher direct de la case
+      // On retire readOnly = true pour permettre l'ouverture du clavier mobile au toucher
 
-      // Au clic direct sur la case, on sélectionne et on affiche le bouton, PAS de clavier
       input.addEventListener("click", (e) => {
-        e.preventDefault();
         selectCellSilently(index);
-        showKeyboardPromptButton(true);
+        input.focus();
+        input.select();
       });
 
       input.addEventListener("focus", () => {
         selectCellSilently(index);
-        showKeyboardPromptButton(true);
       });
 
       input.addEventListener("keydown", e => {
@@ -424,11 +426,22 @@ function render() {
         else if (e.key === "ArrowLeft") { currentInputDir = "E"; moveToNextLetter(-1); return; }
 
         if (e.key === "Backspace") {
-          e.preventDefault(); cell.letter = ""; input.value = "";
-          updatePanel(); updatePlacedWordsList(); persistSession(); moveToNextLetter(-1);
+          e.preventDefault(); 
+          cell.letter = ""; 
+          input.value = "";
+          updatePanel(); 
+          updatePlacedWordsList(); 
+          persistSession(); 
+          moveToNextLetter(-1);
         } else if (e.key.length === 1 && /[a-zA-ZÀ-ÿ]/.test(e.key)) {
-          e.preventDefault(); const char = e.key.toUpperCase(); cell.letter = char; input.value = char;
-          updatePanel(); updatePlacedWordsList(); persistSession(); moveToNextLetter(1);
+          e.preventDefault(); 
+          const char = e.key.toUpperCase(); 
+          cell.letter = char; 
+          input.value = char;
+          updatePanel(); 
+          updatePlacedWordsList(); 
+          persistSession(); 
+          moveToNextLetter(1);
         }
       });
       el.appendChild(input);
@@ -475,6 +488,8 @@ function render() {
     grid.appendChild(el);
   });
 
+
+  
   updatePanel();
   updatePlacedWordsList();
   persistSession();
@@ -1922,51 +1937,5 @@ async function changeUserTheme(newTheme) {
     }
   } catch (error) {
     console.error('Erreur lors de la mise à jour du thème :', error);
-  }
-}
-
-function showKeyboardPromptButton(show) {
-  const kbBtn = document.getElementById('openKeyboardBtn');
-  if (kbBtn) {
-    // N'affiche le bouton que si c'est une case lettre sélectionnée
-    if (show && selected !== null && cells[selected].type === "letter") {
-      kbBtn.style.display = "inline-flex";
-    } else {
-      kbBtn.style.display = "none";
-    }
-  }
-}
-
-function requestKeyboardInput() {
-  if (selected === null || cells[selected].type !== "letter") return;
-
-  const grid = document.getElementById("grid");
-  const el = grid.children[selected];
-  if (el) {
-    const input = el.querySelector("input");
-    if (input) {
-      // Sur iOS (notamment iPhone 11), la case était déjà sélectionnée -
-      // et donc déjà focus() - au moment du tap précédent sur la case,
-      // pendant qu'elle était encore en lecture seule. Si on se contente de
-      // retirer le readOnly et de rappeler focus() sur un input déjà actif,
-      // Safari ne redéclenche aucun évènement de focus et n'ouvre donc pas
-      // le clavier. On force donc explicitement une perte de focus AVANT de
-      // repasser l'input en écriture, afin que le focus() qui suit soit
-      // bien considéré comme un nouveau focus - tout en restant strictement
-      // synchrone, dans la continuité du geste utilisateur (tap sur ce
-      // bouton), condition requise par iOS pour autoriser l'ouverture du
-      // clavier.
-      input.blur();
-      input.readOnly = false;
-      input.focus();
-      input.select();
-
-      // Remet le readOnly à la perte du focus
-      const handleBlur = () => {
-        input.readOnly = true;
-        input.removeEventListener('blur', handleBlur);
-      };
-      input.addEventListener('blur', handleBlur, { once: true });
-    }
   }
 }
