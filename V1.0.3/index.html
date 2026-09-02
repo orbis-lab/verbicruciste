@@ -32,13 +32,13 @@
   <!-- Additional Meta Tags -->
   <meta name="theme-color" content="#000000">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="VerbiCruciste">
   <meta name="application-name" content="VerbiCruciste">
 
   <!-- Lien vers votre feuille de style CSS principale -->
   <link rel="stylesheet" href="./style.css" />
-
 
   <script src="app.js"></script>
 </head>
@@ -58,11 +58,11 @@
         <h3>Connexion à votre espace</h3>
         <div class="form-group">
           <label for="loginEmail">E-mail</label>
-          <input type="email" id="loginEmail" required placeholder="votre@email.com">
+          <input type="email" id="loginEmail" required placeholder="votre@email.com" autocomplete="email">
         </div>
         <div class="form-group">
           <label for="loginPassword">Mot de passe</label>
-          <input type="password" id="loginPassword" required placeholder="••••••••">
+          <input type="password" id="loginPassword" required placeholder="••••••••" autocomplete="current-password">
         </div>
         <div id="loginError" class="error-msg"></div>
         <button type="submit" class="btn-primary">Se connecter</button>
@@ -74,26 +74,27 @@
         <div class="form-row">
           <div class="form-group">
             <label for="regFirstName">Prénom</label>
-            <input type="text" id="regFirstName" placeholder="Jean">
+            <input type="text" id="regFirstName" placeholder="Jean" autocomplete="given-name">
           </div>
           <div class="form-group">
             <label for="regLastName">Nom</label>
-            <input type="text" id="regLastName" placeholder="Dupont">
+            <input type="text" id="regLastName" placeholder="Dupont" autocomplete="family-name">
           </div>
         </div>
         <div class="form-group">
           <label for="regEmail">E-mail</label>
-          <input type="email" id="regEmail" required placeholder="votre@email.com">
+          <input type="email" id="regEmail" required placeholder="votre@email.com" autocomplete="email">
         </div>
         <div class="form-group">
           <label for="regPassword">Mot de passe</label>
-          <input type="password" id="regPassword" required placeholder="••••••••">
+          <input type="password" id="regPassword" required placeholder="••••••••" autocomplete="new-password">
         </div>
         <div id="registerError" class="error-msg"></div>
         <button type="submit" class="btn-primary">S'inscrire</button>
       </form>
     </div>
   </div>
+
 
   <!-- Loader de démarrage -->
   <div id="appLoader" class="app-loader">
@@ -165,8 +166,6 @@
             <span class="material-symbols-outlined">account_circle</span>
           </button>
         </div>
-
-
       </div>
     </div>
 
@@ -175,12 +174,10 @@
     <input id="fileInput" type="file" accept=".json" style="display:none" onchange="importJSON(event)">
   </header>
 
-  <!-- Fond assombri du menu burger mobile (tiroir latéral de la toolbar) -->
+  <!-- Fond assombri du menu burger mobile -->
   <div id="mobileMenuBackdrop" class="mobile-menu-backdrop" onclick="closeMobileMenu()"></div>
 
-  <!-- Barre de navigation mobile : Sélection / Grille / Mots, chacun ouvrant
-       son propre modal indépendant, sans affecter le zoom/déplacement de la
-       grille. -->
+  <!-- Barre de navigation mobile -->
   <nav class="mobile-section-nav">
     <button class="mobile-nav-btn" onclick="openSectionModal('selectionMainSection')">
       <span class="material-symbols-outlined">tune</span>
@@ -196,14 +193,13 @@
     </button>
   </nav>
 
-  <!-- Fond assombri commun aux modals de section (Sélection/Grille/Mots) -->
+  <!-- Fond assombri commun aux modals de section -->
   <div id="mobileSectionBackdrop" class="mobile-section-backdrop" onclick="closeAllSectionModals()"></div>
 
   <div class="app">
 
     <aside class="left">
       <div class="inner-aside">
-
 
         <div class="main-section" id="selectionMainSection">
           <button class="aside-close-btn" onclick="closeAllSectionModals()" data-tooltip="Fermer">
@@ -284,23 +280,18 @@
 
       </div>
     </aside>
+
     <main class="editor">
       <img src="./media/banner.svg" alt="Logo" class="print-banner" />
       <div id="printTitle" class="print-title">Ma Grille</div>
       <div id="grid" class="grid"></div>
       <div class="zoom-controls-wrapper">
-
-        <!-- Nouveau bouton pour ouvrir le clavier sur mobile -->
-        <!-- <button class="zoom-btn" id="openKeyboardBtn" style="display: none;" data-tooltip="Éditer la case"
-          onclick="requestKeyboardInput()">
-          <span class="material-symbols-outlined">keyboard</span>
-        </button> -->
         <!-- Bouton de réinitialisation à gauche -->
-        <button class="zoom-btn  reset-zoom" id="zoomResetBtn" onclick="resetZoom()" data-tooltip="Zoom initial">
+        <button class="zoom-btn reset-zoom" id="zoomResetBtn" onclick="resetZoom()" data-tooltip="Zoom initial">
           <span class="material-symbols-outlined">restart_alt</span>
         </button>
 
-        <!-- Badge de zoom habituel (sans le bouton reset à l'intérieur) -->
+        <!-- Badge de zoom -->
         <div class="zoom-badge">
           <button class="zoom-btn" id="zoomInBtn" data-tooltip="Zoom avant" onclick="zoomIn()">
             <span class="material-symbols-outlined">zoom_in</span>
@@ -315,7 +306,6 @@
 
     <aside class="right">
       <div class="inner-aside">
-
         <div class="main-section" id="wordsMainSection">
           <button class="aside-close-btn" onclick="closeAllSectionModals()" data-tooltip="Fermer">
             <span class="material-symbols-outlined">close</span>
@@ -404,22 +394,17 @@
         <button class="modal-close" onclick="closeUserModal()">&times;</button>
       </div>
       <div class="modal-body">
-        <!-- Nom d'utilisateur / Prénom et Nom -->
         <div class="form-group" style="margin-bottom: 12px;">
           <label>Nom d'utilisateur</label>
           <div id="userNameModalDisplay" style="font-weight: bold; color: #333; font-size: 14px; padding: 4px 0;">-
           </div>
         </div>
-
-        <!-- E-mail -->
         <div class="form-group" style="margin-bottom: 16px;">
           <label>E-mail</label>
           <div id="userEmailModalDisplay"
             style="font-weight: bold; color: #333; font-size: 14px; padding: 4px 0; word-break: break-all;">-</div>
         </div>
-
         <div style="height: 1px; background: #eee; margin: 16px 0;"></div>
-
         <div>
           <button type="button" class="btn-primary" style="background: #e53935; width: 100%;"
             onclick="handleLogout(); closeUserModal();">
@@ -510,14 +495,10 @@
             <span class="material-symbols-outlined">history</span>
             Restaurer la grille
           </button>
-
           <button class="btn-save-choice" onclick="openSession()">
             <span class="material-symbols-outlined">folder_open</span>
             Ouvrir une grille
           </button>
-
-
-
           <button class="btn-save-choice" onclick="discardPreviousSession()">
             <span class="material-symbols-outlined">add_box</span>
             Nouvelle grille
@@ -526,8 +507,14 @@
       </div>
     </div>
   </div>
-<!-- Input unique invisible pour capturer le clavier mobile -->
-<input type="text" id="masterKeyboardInput" autocomplete="off" autocapitalize="characters" style="position: absolute; opacity: 0; pointer-events: none; height: 0; width: 0;" />
+
+  <div id="apiLoader" class="api-loader-overlay">
+    <div class="api-loader-card">
+      <div class="spinner"></div>
+      <span class="api-loader-text">Chargement en cours...</span>
+    </div>
+  </div>
+
 </body>
 
 </html>

@@ -1,4 +1,8 @@
-let currentGridId = null; // ID de la grille active dans la base de données
+/* ===================================================================== */
+/* 1. VARIABLES GLOBALES ET ÉTAT DE L'APPLICATION                    */
+/* ===================================================================== */
+
+let currentGridId = null;
 let COLS = 13;
 let ROWS = 17;
 let currentGridName = "Ma Grille";
@@ -27,9 +31,19 @@ let startX = 0, startY = 0;
 let hasMoved = false;
 let clickStartX = 0;
 let clickStartY = 0;
-let USER = {}
+let USER = {};
 
-window.init = async function () {
+let initialTouchDistance = null;
+let setTransform = null;
+let isSaveAsMode = false;
+let openSectionId = null;
+
+
+/* ===================================================================== */
+/* 2. INITIALISATION ET CYCLE DE VIE                                     */
+/* ===================================================================== */
+
+async function init() {
   const startTime = Date.now();
 
   applyStoredTheme();
@@ -60,15 +74,16 @@ window.init = async function () {
       if (event.target.closest('.icon-btn')) closeMobileMenu();
     });
   }
-};
+}
 
 window.addEventListener('DOMContentLoaded', () => {
-  window.init();
-  document.getElementById('openKeyboardBtn').onclick = function () {
-    console.log("Bouton cliqué via JavaScript !");
-    requestKeyboardInput();
-  };
+  init();
 });
+
+
+/* ===================================================================== */
+/* 3. GÉOMÉTRIE DE LA GRILLE, PAN & ZOOM                                 */
+/* ===================================================================== */
 
 function updateZoomDisplay() {
   const zoomLevelDisplay = document.getElementById('zoomLevelDisplay');
@@ -76,9 +91,6 @@ function updateZoomDisplay() {
     zoomLevelDisplay.textContent = `${Math.round(scale * 100)}%`;
   }
 }
-
-let initialTouchDistance = null;
-let setTransform = null;
 
 function initPanAndZoomGrid() {
   const editorContainer = document.querySelector('.editor');
@@ -236,6 +248,42 @@ function updateGridGeometry() {
   if (setTransform) setTransform();
 }
 
+function resetZoom() {
+  if (typeof updateGridGeometry === 'function') {
+    updateGridGeometry();
+  }
+}
+
+function zoomStep(delta) {
+  const editorContainer = document.querySelector('.editor');
+  if (!editorContainer) return;
+
+  const prevScale = scale;
+  scale = delta > 0 ? Math.min(scale + delta, 2.5) : Math.max(scale + delta, 0.4);
+
+  const rect = editorContainer.getBoundingClientRect();
+  const centerX = rect.width / 2;
+  const centerY = rect.height / 2;
+
+  pointX = centerX - (centerX - pointX) * (scale / prevScale);
+  pointY = centerY - (centerY - pointY) * (scale / prevScale);
+
+  if (setTransform) setTransform();
+}
+
+function zoomIn() { 
+  zoomStep(0.15); 
+}
+
+function zoomOut() { 
+  zoomStep(-0.15); 
+}
+
+
+/* ===================================================================== */
+/* 4. SELECTION, ANALYSE DE MOTS ET NAVIGATION                          */
+/* ===================================================================== */
+
 function emptyCell() {
   return {
     type: "letter", letter: "", definition: "", arrow: "E",
@@ -263,6 +311,11 @@ function selectCellAndFocus(index) {
   }
 }
 
+function selectCell(index) { 
+  selected = Number(index); 
+  render(); 
+}
+
 function findDuplicateWords() {
   const wordCounts = new Map();
   const duplicateIndexes = new Set();
@@ -288,187 +341,6 @@ function findDuplicateWords() {
   });
 
   return { duplicateIndexes: Array.from(duplicateIndexes), duplicateWordStrings };
-}
-
-function updateHighlights() {
-  const grid = document.getElementById("grid");
-  const highlightedIndexes = getHighlightedCells();
-  const combined = Array.from(new Set([...highlightedIndexes, ...hoveredWordIndexes]));
-  const { duplicateIndexes } = findDuplicateWords();
-
-  Array.from(grid.children).forEach((el, idx) => {
-    el.classList.toggle("word-highlighted", combined.includes(idx));
-    el.classList.toggle("word-duplicate", duplicateIndexes.includes(idx));
-  });
-}
-
-function updateGridDisplay() {
-  document.getElementById('gridNameDisplay').textContent = currentGridName;
-  document.getElementById('printTitle').textContent = currentGridName;
-  document.getElementById('gridDimensionsDisplay').textContent = `Grille de ${COLS} colonnes × ${ROWS} lignes`;
-
-  const grid = document.getElementById("grid");
-
-  grid.style.gridTemplateColumns = Array(COLS).fill('var(--cell)').join(' ');
-  grid.style.gridTemplateRows = Array(ROWS).fill('var(--cell)').join(' ');
-
-  const computedCellSize = parseFloat(getComputedStyle(grid).getPropertyValue('--cell')) || 54;
-  grid.style.width = `${COLS * computedCellSize}px`;
-  grid.style.height = `${ROWS * computedCellSize}px`;
-
-  render();
-  updateGridGeometry();
-}
-
-function render() {
-  const grid = document.getElementById("grid");
-  grid.innerHTML = "";
-
-  const highlightedIndexes = getHighlightedCells();
-  const { duplicateIndexes } = findDuplicateWords();
-
-  cells.forEach((cell, index) => {
-    const el = document.createElement("div");
-    el.className = "cell " + cell.type + "-cell";
-
-    if ((index + 1) % COLS === 0) el.style.borderRight = "0";
-    if (index >= COLS * (ROWS - 1)) el.style.borderBottom = "0";
-
-    if (index === selected) el.classList.add("selected");
-    if (highlightedIndexes.includes(index) || hoveredWordIndexes.includes(index)) el.classList.add("word-highlighted");
-    if (duplicateIndexes.includes(index)) el.classList.add("word-duplicate");
-
-    if (cell.type === "letter") {
-      const input = document.createElement("input");
-      input.maxLength = 1;
-      input.value = cell.letter || "";
-      input.setAttribute("autocomplete", "off");
-
-      input.addEventListener("click", (e) => {
-        selectCellSilently(index);
-        input.focus();
-        input.select();
-      });
-
-      input.addEventListener("focus", () => {
-        selectCellSilently(index);
-      });
-
-      input.addEventListener("keydown", e => {
-        if (e.key === "ArrowDown") { currentInputDir = "S"; moveToNextLetter(1); return; }
-        else if (e.key === "ArrowRight") { currentInputDir = "E"; moveToNextLetter(1); return; }
-        else if (e.key === "ArrowUp") { currentInputDir = "S"; moveToNextLetter(-1); return; }
-        else if (e.key === "ArrowLeft") { currentInputDir = "E"; moveToNextLetter(-1); return; }
-
-        if (e.key === "Backspace") {
-          e.preventDefault(); 
-          cell.letter = ""; 
-          input.value = "";
-          updatePanel(); 
-          updatePlacedWordsList(); 
-          persistSession(); 
-          moveToNextLetter(-1);
-        } else if (e.key.length === 1 && /[a-zA-ZÀ-ÿ]/.test(e.key)) {
-          e.preventDefault(); 
-          const char = e.key.toUpperCase(); 
-          cell.letter = char; 
-          input.value = char;
-          updatePanel(); 
-          updatePlacedWordsList(); 
-          persistSession(); 
-          moveToNextLetter(1);
-        }
-      });
-      el.appendChild(input);
-    }
-
-    if (cell.type === "definition") {
-      const editable = document.createElement("div");
-      editable.className = "def-content";
-      editable.contentEditable = "true";
-      editable.innerText = cell.definition;
-      editable.addEventListener("focus", () => {
-        currentInputDir = cell.arrow;
-        selectCellSilently(index);
-        showKeyboardPromptButton(false);
-      });
-      editable.addEventListener("input", e => { cell.definition = e.target.innerText.toUpperCase(); const sideInput = document.getElementById("definitionInput"); if (sideInput) sideInput.value = cell.definition; persistSession(); });
-      el.appendChild(editable);
-      const svg = createArrowSVG(cell.arrow, "full");
-      if (svg) el.appendChild(svg);
-    }
-
-    if (cell.type === "double") {
-      el.innerHTML = `<div class="half"><div class="def-editable" contenteditable="true"></div></div><div class="half"><div class="def-editable" contenteditable="true"></div></div>`;
-      const halves = el.querySelectorAll(".half"); const editables = el.querySelectorAll(".def-editable");
-      editables[0].innerText = cell.top.definition; editables[1].innerText = cell.bottom.definition;
-
-      editables[0].addEventListener("focus", () => { currentInputDir = "E"; selectCellSilently(index); showKeyboardPromptButton(false); const sideInput = document.getElementById("topDefinitionInput"); if (sideInput) sideInput.value = cell.top.definition; });
-      editables[1].addEventListener("focus", () => { currentInputDir = "S"; selectCellSilently(index); showKeyboardPromptButton(false); const sideInput = document.getElementById("bottomDefinitionInput"); if (sideInput) sideInput.value = cell.bottom.definition; });
-
-      editables[0].addEventListener("input", e => { cell.top.definition = e.target.innerText.toUpperCase(); const sideInput = document.getElementById("topDefinitionInput"); if (sideInput) sideInput.value = cell.top.definition; persistSession(); });
-      editables[1].addEventListener("input", e => { cell.bottom.definition = e.target.innerText.toUpperCase(); const sideInput = document.getElementById("bottomDefinitionInput"); if (sideInput) sideInput.value = cell.bottom.definition; persistSession(); });
-
-      const svgTop = createArrowSVG("E", "top"); if (svgTop) halves[0].appendChild(svgTop);
-      const svgBottom = createArrowSVG("S", "bottom"); if (svgBottom) halves[1].appendChild(svgBottom);
-    }
-
-    el.dataset.index = index;
-    el.addEventListener("click", () => {
-      if (cell.type !== "double" && cell.type !== "definition" && cell.type !== "letter") {
-        selectCell(index);
-        showKeyboardPromptButton(false);
-      }
-    });
-    grid.appendChild(el);
-  });
-  
-  updatePanel();
-  updatePlacedWordsList();
-  persistSession();
-}
-
-function moveToNextLetter(step) {
-  if (selected === null || !activeWordTarget || activeWordTarget.indexes.length === 0) return;
-  const currentIndex = activeWordTarget.indexes.indexOf(selected);
-  if (currentIndex !== -1) {
-    const nextPos = currentIndex + step;
-    if (nextPos >= 0 && nextPos < activeWordTarget.indexes.length) selectCellAndFocus(activeWordTarget.indexes[nextPos]);
-  }
-}
-
-function createArrowSVG(dir, zone) {
-  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("class", "arrow-svg");
-  let startX = 0, startY = 0, endX = 0, endY = 0, customStyle = "";
-  if (zone === "full") {
-    if (dir === "S") { startX = 27; startY = 54; endX = 27; endY = 64; }
-    else if (dir === "E") { startX = 54; startY = 27; endX = 64; endY = 27; }
-  } else if (zone === "top") { startX = 0; startY = 0; endX = 10; endY = 0; customStyle = "left: 48px;"; }
-  else if (zone === "bottom") { startX = 0; startY = 0; endX = 0; endY = 10; customStyle = "top: 22px;"; }
-
-  const minX = Math.min(startX, endX) - 5; const minY = Math.min(startY, endY) - 5;
-  const maxX = Math.max(startX, endX) + 5; const maxY = Math.max(startY, endY) + 5;
-
-  if (customStyle) svg.setAttribute("style", `${customStyle} width:${maxX - minX}px; height:${maxY - minY}px; overflow:visible;`);
-  else svg.setAttribute("style", `left:${minX}px; top:${minY}px; width:${maxX - minX}px; height:${maxY - minY}px; overflow:visible;`);
-  svg.setAttribute("viewBox", `${minX} ${minY} ${maxX - minX} ${maxY - minY}`);
-
-  const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-  const marker = document.createElementNS("http://www.w3.org/2000/svg", "marker");
-  const markerId = `arrowhead-${Math.random().toString(36).substr(2, 9)}`;
-  marker.setAttribute("id", markerId); marker.setAttribute("markerWidth", "6"); marker.setAttribute("markerHeight", "6");
-  marker.setAttribute("refX", "5"); marker.setAttribute("refY", "3"); marker.setAttribute("orient", "auto");
-
-  const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
-  polygon.setAttribute("points", "0 0, 6 3, 0 6"); polygon.setAttribute("fill", "#222");
-  marker.appendChild(polygon); defs.appendChild(marker); svg.appendChild(defs);
-
-  const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-  line.setAttribute("x1", startX); line.setAttribute("y1", startY); line.setAttribute("x2", endX); line.setAttribute("y2", endY);
-  line.setAttribute("stroke", "#222"); line.setAttribute("stroke-width", "2"); line.setAttribute("marker-end", `url(#${markerId})`);
-  svg.appendChild(line);
-  return svg;
 }
 
 function getWordData(fromIndex, dir) {
@@ -548,6 +420,245 @@ function getHighlightedCells() {
   return [];
 }
 
+function updateHighlights() {
+  const grid = document.getElementById("grid");
+  const highlightedIndexes = getHighlightedCells();
+  const combined = Array.from(new Set([...highlightedIndexes, ...hoveredWordIndexes]));
+  const { duplicateIndexes } = findDuplicateWords();
+
+  Array.from(grid.children).forEach((el, idx) => {
+    el.classList.toggle("word-highlighted", combined.includes(idx));
+    el.classList.toggle("word-duplicate", duplicateIndexes.includes(idx));
+  });
+}
+
+function moveToNextLetter(step) {
+  if (selected === null || !activeWordTarget || activeWordTarget.indexes.length === 0) return;
+  const currentIndex = activeWordTarget.indexes.indexOf(selected);
+  if (currentIndex !== -1) {
+    const nextPos = currentIndex + step;
+    if (nextPos >= 0 && nextPos < activeWordTarget.indexes.length) selectCellAndFocus(activeWordTarget.indexes[nextPos]);
+  }
+}
+
+
+/* ===================================================================== */
+/* 5. AFFICHAGE, RENDU ET INTERFACE GRILLE                               */
+/* ===================================================================== */
+
+function updateGridDisplay() {
+  document.getElementById('gridNameDisplay').textContent = currentGridName;
+  document.getElementById('printTitle').textContent = currentGridName;
+  document.getElementById('gridDimensionsDisplay').textContent = `Grille de ${COLS} colonnes × ${ROWS} lignes`;
+
+  const grid = document.getElementById("grid");
+
+  grid.style.gridTemplateColumns = Array(COLS).fill('var(--cell)').join(' ');
+  grid.style.gridTemplateRows = Array(ROWS).fill('var(--cell)').join(' ');
+
+  const computedCellSize = parseFloat(getComputedStyle(grid).getPropertyValue('--cell')) || 54;
+  grid.style.width = `${COLS * computedCellSize}px`;
+  grid.style.height = `${ROWS * computedCellSize}px`;
+
+  render();
+  updateGridGeometry();
+}
+
+function render() {
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+
+  const highlightedIndexes = getHighlightedCells();
+  const { duplicateIndexes } = findDuplicateWords();
+
+  cells.forEach((cell, index) => {
+    const el = document.createElement("div");
+    el.className = "cell " + cell.type + "-cell";
+
+    if ((index + 1) % COLS === 0) el.style.borderRight = "0";
+    if (index >= COLS * (ROWS - 1)) el.style.borderBottom = "0";
+
+    if (index === selected) el.classList.add("selected");
+    if (highlightedIndexes.includes(index) || hoveredWordIndexes.includes(index)) el.classList.add("word-highlighted");
+    if (duplicateIndexes.includes(index)) el.classList.add("word-duplicate");
+
+    if (cell.type === "letter") {
+      const input = document.createElement("input");
+      input.maxLength = 1;
+      input.value = cell.letter || "";
+      input.setAttribute("autocomplete", "off");
+
+      input.addEventListener("click", () => {
+        selectCellSilently(index);
+        input.focus();
+        input.select();
+      });
+
+      input.addEventListener("focus", () => {
+        selectCellSilently(index);
+      });
+
+      input.addEventListener("keydown", e => {
+        if (e.key === "ArrowDown") { currentInputDir = "S"; moveToNextLetter(1); return; }
+        else if (e.key === "ArrowRight") { currentInputDir = "E"; moveToNextLetter(1); return; }
+        else if (e.key === "ArrowUp") { currentInputDir = "S"; moveToNextLetter(-1); return; }
+        else if (e.key === "ArrowLeft") { currentInputDir = "E"; moveToNextLetter(-1); return; }
+
+        if (e.key === "Backspace") {
+          e.preventDefault(); 
+          cell.letter = ""; 
+          input.value = "";
+          updatePanel(); 
+          updatePlacedWordsList(); 
+          persistSession(); 
+          moveToNextLetter(-1);
+        } else if (e.key.length === 1 && /[a-zA-ZÀ-ÿ]/.test(e.key)) {
+          e.preventDefault(); 
+          const char = e.key.toUpperCase(); 
+          cell.letter = char; 
+          input.value = char;
+          updatePanel(); 
+          updatePlacedWordsList(); 
+          persistSession(); 
+          moveToNextLetter(1);
+        }
+      });
+      el.appendChild(input);
+    }
+
+    if (cell.type === "definition") {
+      const editable = document.createElement("div");
+      editable.className = "def-content";
+      editable.contentEditable = "true";
+      editable.innerText = cell.definition;
+      editable.addEventListener("focus", () => {
+        currentInputDir = cell.arrow;
+        selectCellSilently(index);
+      });
+      editable.addEventListener("input", e => { 
+        cell.definition = e.target.innerText.toUpperCase(); 
+        const sideInput = document.getElementById("definitionInput"); 
+        if (sideInput) sideInput.value = cell.definition; 
+        persistSession(); 
+      });
+      el.appendChild(editable);
+      const svg = createArrowSVG(cell.arrow, "full");
+      if (svg) el.appendChild(svg);
+    }
+
+    if (cell.type === "double") {
+      el.innerHTML = `<div class="half"><div class="def-editable" contenteditable="true"></div></div><div class="half"><div class="def-editable" contenteditable="true"></div></div>`;
+      const halves = el.querySelectorAll(".half"); 
+      const editables = el.querySelectorAll(".def-editable");
+      editables[0].innerText = cell.top.definition; 
+      editables[1].innerText = cell.bottom.definition;
+
+      editables[0].addEventListener("focus", () => { currentInputDir = "E"; selectCellSilently(index); const sideInput = document.getElementById("topDefinitionInput"); if (sideInput) sideInput.value = cell.top.definition; });
+      editables[1].addEventListener("focus", () => { currentInputDir = "S"; selectCellSilently(index); const sideInput = document.getElementById("bottomDefinitionInput"); if (sideInput) sideInput.value = cell.bottom.definition; });
+
+      editables[0].addEventListener("input", e => { cell.top.definition = e.target.innerText.toUpperCase(); const sideInput = document.getElementById("topDefinitionInput"); if (sideInput) sideInput.value = cell.top.definition; persistSession(); });
+      editables[1].addEventListener("input", e => { cell.bottom.definition = e.target.innerText.toUpperCase(); const sideInput = document.getElementById("bottomDefinitionInput"); if (sideInput) sideInput.value = cell.bottom.definition; persistSession(); });
+
+      const svgTop = createArrowSVG("E", "top"); if (svgTop) halves[0].appendChild(svgTop);
+      const svgBottom = createArrowSVG("S", "bottom"); if (svgBottom) halves[1].appendChild(svgBottom);
+    }
+
+    el.dataset.index = index;
+    el.addEventListener("click", () => {
+      if (cell.type !== "double" && cell.type !== "definition" && cell.type !== "letter") {
+        selectCell(index);
+      }
+    });
+    grid.appendChild(el);
+  });
+  
+  updatePanel();
+  updatePlacedWordsList();
+  persistSession();
+}
+
+function createArrowSVG(dir, zone) {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("class", "arrow-svg");
+  let startX = 0, startY = 0, endX = 0, endY = 0, customStyle = "";
+  if (zone === "full") {
+    if (dir === "S") { startX = 27; startY = 54; endX = 27; endY = 64; }
+    else if (dir === "E") { startX = 54; startY = 27; endX = 64; endY = 27; }
+  } else if (zone === "top") { startX = 0; startY = 0; endX = 10; endY = 0; customStyle = "left: 48px;"; }
+  else if (zone === "bottom") { startX = 0; startY = 0; endX = 0; endY = 10; customStyle = "top: 22px;"; }
+
+  const minX = Math.min(startX, endX) - 5; const minY = Math.min(startY, endY) - 5;
+  const maxX = Math.max(startX, endX) + 5; const maxY = Math.max(startY, endY) + 5;
+
+  if (customStyle) svg.setAttribute("style", `${customStyle} width:${maxX - minX}px; height:${maxY - minY}px; overflow:visible;`);
+  else svg.setAttribute("style", `left:${minX}px; top:${minY}px; width:${maxX - minX}px; height:${maxY - minY}px; overflow:visible;`);
+  svg.setAttribute("viewBox", `${minX} ${minY} ${maxX - minX} ${maxY - minY}`);
+
+  const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+  const marker = document.createElementNS("http://www.w3.org/2000/svg", "marker");
+  const markerId = `arrowhead-${Math.random().toString(36).substr(2, 9)}`;
+  marker.setAttribute("id", markerId); marker.setAttribute("markerWidth", "6"); marker.setAttribute("markerHeight", "6");
+  marker.setAttribute("refX", "5"); marker.setAttribute("refY", "3"); marker.setAttribute("orient", "auto");
+
+  const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+  polygon.setAttribute("points", "0 0, 6 3, 0 6"); polygon.setAttribute("fill", "#222");
+  marker.appendChild(polygon); defs.appendChild(marker); svg.appendChild(defs);
+
+  const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  line.setAttribute("x1", startX); line.setAttribute("y1", startY); line.setAttribute("x2", endX); line.setAttribute("y2", endY);
+  line.setAttribute("stroke", "#222"); line.setAttribute("stroke-width", "2"); line.setAttribute("marker-end", `url(#${markerId})`);
+  svg.appendChild(line);
+  return svg;
+}
+
+function updatePanel() {
+  document.querySelectorAll(".type-buttons button").forEach(btn => { 
+    btn.classList.toggle("active", selected !== null && btn.dataset.type === cells[selected].type); 
+  });
+  const info = document.getElementById("selectedInfo");
+  const single = document.getElementById("singleDefControls");
+  const dbl = document.getElementById("doubleDefControls");
+  const wordContainer = document.getElementById("wordFormedContainer");
+
+  if (selected === null) { 
+    info.textContent = "Cliquez sur une case de la grille."; 
+    single.style.display = "none"; 
+    dbl.style.display = "none"; 
+    wordContainer.innerHTML = ""; 
+    return; 
+  }
+
+  const row = Math.floor(selected / COLS) + 1; 
+  const col = selected % COLS + 1;
+  info.textContent = `Case : colonne ${col}, ligne ${row}`;
+  const cell = cells[selected];
+  single.style.display = cell.type === "definition" ? "block" : "none";
+  dbl.style.display = cell.type === "double" ? "block" : "none";
+  wordContainer.innerHTML = "";
+
+  if (cell.type === "definition") {
+    document.getElementById("definitionInput").value = cell.definition;
+    document.getElementById("btnArrowE").classList.toggle("active", cell.arrow === "E");
+    document.getElementById("btnArrowS").classList.toggle("active", cell.arrow === "S");
+    const data = getWordData(selected, cell.arrow); 
+    renderWordBox(wordContainer, "Mot formé", data.word, data.indexes, "word-def", cell.arrow);
+  }
+
+  if (cell.type === "double") {
+    document.getElementById("topDefinitionInput").value = cell.top.definition;
+    document.getElementById("bottomDefinitionInput").value = cell.bottom.definition;
+    const dataTop = getWordData(selected, "E"); 
+    const dataBot = getWordData(selected, "S");
+    renderWordBox(wordContainer, "Mot du haut", dataTop.word, dataTop.indexes, "word-top", "E");
+    renderWordBox(wordContainer, "Mot du bas", dataBot.word, dataBot.indexes, "word-bot", "S");
+  }
+
+  if (cell.type === "letter") {
+    const parent = findParentWordForLetter(selected, currentInputDir);
+    if (parent) renderWordBox(wordContainer, "Mot associé", parent.data.word, parent.data.indexes, "word-letter", parent.dir);
+  }
+}
+
 function updatePlacedWordsList() {
   const wordsListEl = document.getElementById("wordsList");
   const wordsCountEl = document.getElementById("wordsCount");
@@ -570,20 +681,33 @@ function updatePlacedWordsList() {
   wordsCountEl.textContent = `${wordsArray.length} mot${wordsArray.length > 1 ? 's' : ''} trouvé${wordsArray.length > 1 ? 's' : ''}`;
   wordsListEl.innerHTML = "";
 
-  if (wordsArray.length === 0) { wordsListEl.innerHTML = "<div style='font-size:12px;color:#888;font-style:italic;'>Aucun mot dans la grille</div>"; return; }
+  if (wordsArray.length === 0) { 
+    wordsListEl.innerHTML = "<div style='font-size:12px;color:#888;font-style:italic;'>Aucun mot dans la grille</div>"; 
+    return; 
+  }
 
   const groupedByLength = {};
   wordsArray.forEach(item => { const len = item.text.length; if (!groupedByLength[len]) groupedByLength[len] = []; groupedByLength[len].push(item); });
   const sortedLengths = Object.keys(groupedByLength).map(Number).sort((a, b) => a - b);
 
   sortedLengths.forEach(len => {
-    const groupDiv = document.createElement("div"); groupDiv.className = "word-group";
-    const titleDiv = document.createElement("div"); titleDiv.className = "word-group-title"; titleDiv.textContent = `${len} lettres :`; groupDiv.appendChild(titleDiv);
+    const groupDiv = document.createElement("div"); 
+    groupDiv.className = "word-group";
+    const titleDiv = document.createElement("div"); 
+    titleDiv.className = "word-group-title"; 
+    titleDiv.textContent = `${len} lettres :`; 
+    groupDiv.appendChild(titleDiv);
+    
     groupedByLength[len].sort((a, b) => a.text.localeCompare(b.text, 'fr'));
 
     groupedByLength[len].forEach(item => {
-      const wordEl = document.createElement("div"); wordEl.className = "word-item"; wordEl.textContent = item.text;
-      if (duplicateWordStrings.has(item.text)) { wordEl.classList.add("is-duplicate"); wordEl.title = "Mot présent plusieurs fois !"; }
+      const wordEl = document.createElement("div"); 
+      wordEl.className = "word-item"; 
+      wordEl.textContent = item.text;
+      if (duplicateWordStrings.has(item.text)) { 
+        wordEl.classList.add("is-duplicate"); 
+        wordEl.title = "Mot présent plusieurs fois !"; 
+      }
       wordEl.addEventListener("mouseenter", () => { hoveredWordIndexes = item.indexes; updateHighlights(); });
       wordEl.addEventListener("mouseleave", () => { hoveredWordIndexes = []; updateHighlights(); });
       wordEl.addEventListener("click", () => { if (item.indexes.length > 0) selectCellAndFocus(item.indexes[0]); });
@@ -591,71 +715,6 @@ function updatePlacedWordsList() {
     });
     wordsListEl.appendChild(groupDiv);
   });
-}
-
-function selectCell(index) { selected = Number(index); render(); }
-
-function setType(type) {
-  if (selected === null || selected === undefined || Number.isNaN(Number(selected))) { alert("Sélectionnez d'abord une case."); return; }
-  selected = Number(selected);
-  cells[selected].type = type;
-  if (type === "double") { cells[selected].top.arrow = "E"; cells[selected].bottom.arrow = "S"; }
-  render();
-  if (type === "definition") focusDefinitionCell(selected);
-  else if (type === "double") focusDoubleDefinitionCell(selected);
-  else if (type === "letter") selectCellAndFocus(selected);
-}
-
-function focusDefinitionCell(index) {
-  setTimeout(() => {
-    const grid = document.getElementById("grid"); const cellEl = grid.children[index];
-    if (cellEl) {
-      const defEditable = cellEl.querySelector(".def-content");
-      if (defEditable) {
-        defEditable.focus(); const range = document.createRange(); const sel = window.getSelection();
-        range.selectNodeContents(defEditable); range.collapse(false); sel.removeAllRanges(); sel.addRange(range);
-      }
-    }
-  }, 10);
-}
-
-function focusDoubleDefinitionCell(index) { setTimeout(() => { const grid = document.getElementById("grid"); const cellEl = grid.children[index]; if (cellEl) { const firstEditable = cellEl.querySelector(".def-editable"); if (firstEditable) firstEditable.focus(); } }, 10); }
-
-function updatePanel() {
-  document.querySelectorAll(".type-buttons button").forEach(btn => { btn.classList.toggle("active", selected !== null && btn.dataset.type === cells[selected].type); });
-  const info = document.getElementById("selectedInfo");
-  const single = document.getElementById("singleDefControls");
-  const dbl = document.getElementById("doubleDefControls");
-  const wordContainer = document.getElementById("wordFormedContainer");
-
-  if (selected === null) { info.textContent = "Cliquez sur une case de la grille."; single.style.display = "none"; dbl.style.display = "none"; wordContainer.innerHTML = ""; return; }
-
-  const row = Math.floor(selected / COLS) + 1; const col = selected % COLS + 1;
-  info.textContent = `Case : colonne ${col}, ligne ${row}`;
-  const cell = cells[selected];
-  single.style.display = cell.type === "definition" ? "block" : "none";
-  dbl.style.display = cell.type === "double" ? "block" : "none";
-  wordContainer.innerHTML = "";
-
-  if (cell.type === "definition") {
-    document.getElementById("definitionInput").value = cell.definition;
-    document.getElementById("btnArrowE").classList.toggle("active", cell.arrow === "E");
-    document.getElementById("btnArrowS").classList.toggle("active", cell.arrow === "S");
-    const data = getWordData(selected, cell.arrow); renderWordBox(wordContainer, "Mot formé", data.word, data.indexes, "word-def", cell.arrow);
-  }
-
-  if (cell.type === "double") {
-    document.getElementById("topDefinitionInput").value = cell.top.definition;
-    document.getElementById("bottomDefinitionInput").value = cell.bottom.definition;
-    const dataTop = getWordData(selected, "E"); const dataBot = getWordData(selected, "S");
-    renderWordBox(wordContainer, "Mot du haut", dataTop.word, dataTop.indexes, "word-top", "E");
-    renderWordBox(wordContainer, "Mot du bas", dataBot.word, dataBot.indexes, "word-bot", "S");
-  }
-
-  if (cell.type === "letter") {
-    const parent = findParentWordForLetter(selected, currentInputDir);
-    if (parent) renderWordBox(wordContainer, "Mot associé", parent.data.word, parent.data.indexes, "word-letter", parent.dir);
-  }
 }
 
 function renderWordBox(container, labelText, word, indexes, idPrefix, dir) {
@@ -725,6 +784,109 @@ function renderWordBox(container, labelText, word, indexes, idPrefix, dir) {
 
   container.appendChild(box);
 }
+
+
+/* ===================================================================== */
+/* 6. ÉDITION DES CELLULES ET MODIFICATIONS                              */
+/* ===================================================================== */
+
+function setType(type) {
+  if (selected === null || selected === undefined || Number.isNaN(Number(selected))) { 
+    alert("Sélectionnez d'abord une case."); 
+    return; 
+  }
+  selected = Number(selected);
+  cells[selected].type = type;
+  if (type === "double") { 
+    cells[selected].top.arrow = "E"; 
+    cells[selected].bottom.arrow = "S"; 
+  }
+  render();
+  if (type === "definition") focusDefinitionCell(selected);
+  else if (type === "double") focusDoubleDefinitionCell(selected);
+  else if (type === "letter") selectCellAndFocus(selected);
+}
+
+function focusDefinitionCell(index) {
+  setTimeout(() => {
+    const grid = document.getElementById("grid"); 
+    const cellEl = grid.children[index];
+    if (cellEl) {
+      const defEditable = cellEl.querySelector(".def-content");
+      if (defEditable) {
+        defEditable.focus(); 
+        const range = document.createRange(); 
+        const sel = window.getSelection();
+        range.selectNodeContents(defEditable); 
+        range.collapse(false); 
+        sel.removeAllRanges(); 
+        sel.addRange(range);
+      }
+    }
+  }, 10);
+}
+
+function focusDoubleDefinitionCell(index) { 
+  setTimeout(() => { 
+    const grid = document.getElementById("grid"); 
+    const cellEl = grid.children[index]; 
+    if (cellEl) { 
+      const firstEditable = cellEl.querySelector(".def-editable"); 
+      if (firstEditable) firstEditable.focus(); 
+    } 
+  }, 10); 
+}
+
+function fillWordInGrid(word, indexes) { 
+  for (let i = 0; i < indexes.length; i++) { 
+    if (i < word.length) cells[indexes[i]].letter = word[i]; 
+  } 
+  render(); 
+}
+
+function updateDefinition(value) { 
+  if (selected !== null) { 
+    cells[selected].definition = value.toUpperCase(); 
+    const grid = document.getElementById("grid"); 
+    if (grid.children[selected]) { 
+      const def = grid.children[selected].querySelector(".def-content"); 
+      if (def && def !== document.activeElement) def.innerText = cells[selected].definition; 
+    } 
+    persistSession(); 
+  } 
+}
+
+function setArrow(direction) { 
+  if (selected !== null && cells[selected].type === "definition") { 
+    cells[selected].arrow = direction; 
+    currentInputDir = direction; 
+    render(); 
+  } 
+}
+
+function updateHalfDefinition(which, value) { 
+  if (selected !== null && cells[selected].type === "double") { 
+    cells[selected][which].definition = value.toUpperCase(); 
+    const grid = document.getElementById("grid"); 
+    if (grid.children[selected]) { 
+      const editables = grid.children[selected].querySelectorAll(".def-editable"); 
+      const idx = which === "top" ? 0 : 1; 
+      if (editables[idx] && editables[idx] !== document.activeElement) editables[idx].innerText = cells[selected][which].definition; 
+    } 
+    persistSession(); 
+  } 
+}
+
+function clearCell() { 
+  if (selected === null) return; 
+  cells[selected] = emptyCell(); 
+  render(); 
+}
+
+
+/* ===================================================================== */
+/* 7. API EXTERNES ET DICTIONNAIRES (WIKTIONAIRE)                         */
+/* ===================================================================== */
 
 async function fetchSpellCorrection(word, indexes, resultContainerId) {
   const container = document.getElementById(resultContainerId);
@@ -957,30 +1119,60 @@ async function fetchWordDefinition(word, resultContainerId) {
   }
 }
 
-function fillWordInGrid(word, indexes) { for (let i = 0; i < indexes.length; i++) { if (i < word.length) cells[indexes[i]].letter = word[i]; } render(); }
 
-function updateDefinition(value) { if (selected !== null) { cells[selected].definition = value.toUpperCase(); const grid = document.getElementById("grid"); if (grid.children[selected]) { const def = grid.children[selected].querySelector(".def-content"); if (def && def !== document.activeElement) def.innerText = cells[selected].definition; } persistSession(); } }
-function setArrow(direction) { if (selected !== null && cells[selected].type === "definition") { cells[selected].arrow = direction; currentInputDir = direction; render(); } }
-function updateHalfDefinition(which, value) { if (selected !== null && cells[selected].type === "double") { cells[selected][which].definition = value.toUpperCase(); const grid = document.getElementById("grid"); if (grid.children[selected]) { const editables = grid.children[selected].querySelectorAll(".def-editable"); const idx = which === "top" ? 0 : 1; if (editables[idx] && editables[idx] !== document.activeElement) editables[idx].innerText = cells[selected][which].definition; } persistSession(); } }
+/* ===================================================================== */
+/* 8. PERSISTANCE, CLOUD ET GESTION DES GRILLES                          */
+/* ===================================================================== */
 
-function clearCell() { if (selected === null) return; cells[selected] = emptyCell(); render(); }
-
-function newGrid() { openSettingsModal(true); }
-
-function openSettingsModal(isNew = false) {
-  isCreatingNewGrid = isNew;
-  document.getElementById('settingsModalTitle').textContent = isNew ? "Nouvelle grille" : "Paramètres de la grille";
-  document.getElementById('settingName').value = isNew ? "Nouvelle Grille" : currentGridName;
-  document.getElementById('settingCols').value = COLS;
-  document.getElementById('settingRows').value = ROWS;
-  document.getElementById('settingsModal').classList.add('active');
+function persistSession() {
+  if (sessionRestorePending) return;
+  try {
+    localStorage.setItem("motsFlechesLastSession", JSON.stringify({
+      name: currentGridName, cols: COLS, rows: ROWS, cells: cells
+    }));
+  } catch (e) {}
 }
 
-function closeSettingsModal() { document.getElementById("settingsModal").classList.remove("active"); }
-function closeSettingsModalOnOverlay(event) { if (event.target.id === "settingsModal") closeSettingsModal(); }
+async function getSavedGrids() {
+  try {
+    showApiLoader()
 
-// --- REST API : saveGridToCloud ---
-const saveGridToCloud = (gridData) => {
+    const response = await fetch('./api/grids', {
+      method: 'GET',
+      credentials: 'include'
+    });
+    const data = await response.json();
+
+    hideApiLoader()
+
+    if (data.success && data.grids) {
+      const gridsMap = {};
+      data.grids.forEach(grid => {
+        const rawContent = grid.content || grid.grid_data;
+        let gridContent = typeof rawContent === 'string'
+          ? JSON.parse(rawContent)
+          : rawContent;
+
+        let finalCols = grid.cols !== undefined ? parseInt(grid.cols, 10) : (gridContent.cols || 13);
+        let finalRows = grid.rows !== undefined ? parseInt(grid.rows, 10) : (gridContent.rows || 17);
+        let finalCells = Array.isArray(gridContent) ? gridContent : (gridContent.cells || gridContent);
+
+        gridsMap[grid.name] = {
+          id: grid.id,
+          cols: finalCols,
+          rows: finalRows,
+          cells: finalCells
+        };
+      });
+      return gridsMap;
+    }
+  } catch (err) {
+    console.error("Erreur lors du chargement des grilles depuis le cloud :", err);
+  }
+  return {};
+}
+
+function saveGridToCloud(gridData) {
   const payload = {
     id: currentGridId, 
     name: currentGridName,
@@ -993,6 +1185,8 @@ const saveGridToCloud = (gridData) => {
   const method = currentGridId ? 'PUT' : 'POST';
   const url = currentGridId ? `./api/grids/${currentGridId}` : './api/grids';
 
+  showApiLoader()
+
   fetch(url, {
     method: method,
     headers: {
@@ -1003,6 +1197,8 @@ const saveGridToCloud = (gridData) => {
   })
     .then(response => response.json())
     .then(data => {
+
+      hideApiLoader()
       if (data.success) {
         if (data.id) {
           currentGridId = data.id;
@@ -1014,8 +1210,431 @@ const saveGridToCloud = (gridData) => {
     })
     .catch(error => {
       console.error("Erreur réseau :", error);
+      hideApiLoader()
     });
-};
+}
+
+async function deleteSavedGrid(name, gridId) {
+  if (!confirm(`Supprimer la grille "${name}" du cloud ?`)) return;
+
+  try {
+
+    showApiLoader()
+
+    const response = await fetch(`./api/grids/${gridId}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include'
+    });
+
+    const rawText = await response.text();
+
+    hideApiLoader()
+
+    let data;
+
+    try {
+      data = JSON.parse(rawText);
+    } catch (e) {
+      console.error("Réponse serveur invalide (non-JSON) :", rawText);
+      alert("Erreur serveur : Le script PHP a renvoyé du code HTML ou une erreur.");
+      return;
+    }
+
+    if (data.success) {
+      openLoadModal();
+    } else {
+      alert(data.error || "Erreur lors de la suppression.");
+    }
+  } catch (err) {
+    console.error("Erreur réseau :", err);
+    alert("Impossible de contacter le serveur pour la suppression.");
+  }
+}
+
+async function checkPreviousSession() {
+  try {
+    const savedGrids = await getSavedGrids();
+    const gridNames = Object.keys(savedGrids);
+
+    if (gridNames.length === 0) return;
+
+    const lastName = gridNames[gridNames.length - 1];
+    const lastGridData = savedGrids[lastName];
+
+    if (!lastGridData || !lastGridData.cells || lastGridData.cells.length === 0) return;
+
+    sessionRestorePending = true;
+    pendingSessionData = {
+      name: lastName,
+      cols: lastGridData.cols || 13,
+      rows: lastGridData.rows || 17,
+      cells: lastGridData.cells,
+      id: lastGridData.id || null
+    };
+
+    const modal = document.getElementById("restoreModal");
+    if (modal) modal.classList.add("active");
+
+  } catch (e) {
+    console.error("Erreur lors de la vérification des sessions cloud :", e);
+  }
+}
+
+function restorePreviousSession() {
+  if (pendingSessionData) {
+    COLS = pendingSessionData.cols || 13;
+    ROWS = pendingSessionData.rows || 17;
+    cells = pendingSessionData.cells;
+    currentGridName = pendingSessionData.name || "Ma Grille";
+    currentGridId = pendingSessionData.id || null;
+  }
+  sessionRestorePending = false;
+  pendingSessionData = null;
+  selected = null;
+
+  updateGridDisplay();
+
+  if (typeof updateGridGeometry === 'function') {
+    updateGridGeometry();
+  }
+
+  closeRestoreModal();
+}
+
+function discardPreviousSession() {
+  sessionRestorePending = false;
+  pendingSessionData = null;
+  closeRestoreModal();
+  persistSession();
+  newGrid();
+}
+
+function openSession() {
+  openLoadModal();
+  closeRestoreModal();
+}
+
+function newGrid() { 
+  openSettingsModal(true); 
+}
+
+function clearGrid() {
+  const modal = document.getElementById("clearGridModal");
+  if (modal) {
+    modal.classList.add("active");
+  } else {
+    if (confirm("Vider toute la grille ?")) {
+      executeClearGrid();
+    }
+  }
+}
+
+function executeClearGrid() {
+  cells = Array.from({ length: COLS * ROWS }, emptyCell);
+  selected = null;
+  render();
+  closeClearModal();
+}
+
+async function loadSelectedGrid(name) {
+  const savedGrids = await getSavedGrids();
+  const data = savedGrids[name];
+
+  if (data) {
+    if (Array.isArray(data)) {
+      COLS = 13;
+      ROWS = 17;
+      cells = data;
+      currentGridId = null;
+    } else {
+      COLS = data.cols;
+      ROWS = data.rows;
+      cells = data.cells;
+      currentGridId = data.id || null;
+    }
+
+    currentGridName = name;
+    selected = null;
+
+    updateGridDisplay();
+
+    if (typeof updateGridGeometry === 'function') {
+      updateGridGeometry();
+    }
+
+    closeLoadModal();
+  }
+}
+
+function importJSON(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.cells) {
+        cells = data.cells;
+        COLS = data.cols || 13;
+        ROWS = data.rows || 17;
+        currentGridName = data.name || file.name.replace(".json", "");
+      } else if (Array.isArray(data)) {
+        cells = data; COLS = 13; ROWS = 17;
+        currentGridName = file.name.replace(".json", "");
+      }
+      selected = null;
+      updateGridDisplay();
+    } catch (err) {
+      alert("Fichier JSON invalide.");
+    }
+  };
+  reader.readAsText(file);
+}
+
+
+/* ===================================================================== */
+/* 9. AUTHENTIFICATION UTILISATEUR                                       */
+/* ===================================================================== */
+
+function switchAuthTab(tab) {
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+  const tabLoginBtn = document.getElementById('tabLoginBtn');
+  const tabRegisterBtn = document.getElementById('tabRegisterBtn');
+
+  if (tab === 'login') {
+    loginForm.style.display = 'block';
+    registerForm.style.display = 'none';
+    tabLoginBtn.classList.add('active');
+    tabRegisterBtn.classList.remove('active');
+  } else {
+    loginForm.style.display = 'none';
+    registerForm.style.display = 'block';
+    tabRegisterBtn.classList.add('active');
+    tabLoginBtn.classList.remove('active');
+  }
+}
+
+async function handleLogin(event) {
+  event.preventDefault();
+  const email = document.getElementById('loginEmail').value;
+  const password = document.getElementById('loginPassword').value;
+  const errorDiv = document.getElementById('loginError');
+  errorDiv.textContent = '';
+
+  try {
+
+    showApiLoader()
+
+    const response = await fetch('./api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email, password })
+    });
+    const data = await response.json();
+
+    hideApiLoader()
+
+    if (data.success) {
+      document.getElementById('authModal').style.display = 'none';
+      checkUserSession();
+    } else {
+      errorDiv.textContent = data.error || 'Erreur de connexion';
+    }
+  } catch (err) {
+    errorDiv.textContent = 'Impossible de contacter le serveur.';
+  }
+}
+
+async function handleRegister(event) {
+  event.preventDefault();
+  const first_name = document.getElementById('regFirstName').value;
+  const last_name = document.getElementById('regLastName').value;
+  const email = document.getElementById('regEmail').value;
+  const password = document.getElementById('regPassword').value;
+  const errorDiv = document.getElementById('registerError');
+  errorDiv.textContent = '';
+
+  try {
+
+    showApiLoader()
+
+    const response = await fetch('./api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ first_name, last_name, email, password })
+    });
+    const data = await response.json();
+
+    hideApiLoader()
+
+    if (data.success) {
+      document.getElementById('authModal').style.display = 'none';
+      checkUserSession();
+    } else {
+      errorDiv.textContent = data.error || 'Erreur lors de l\'inscription';
+    }
+  } catch (err) {
+    errorDiv.textContent = 'Impossible de contacter le serveur.';
+  }
+}
+
+async function handleLogout() {
+  try {
+
+    await fetch('./api/auth/logout', {
+      method: 'POST',
+      credentials: 'include'
+    });
+    location.reload();
+  } catch (err) {
+    console.error('Erreur lors de la déconnexion');
+  }
+}
+
+async function checkUserSession() {
+  try {
+
+    showApiLoader()
+
+    const response = await fetch('./api/user', {
+      method: 'GET',
+      credentials: 'include'
+    });
+
+    if (response.status === 401) {
+      document.getElementById('authModal').style.display = 'flex';
+      document.getElementById('userMenuContainer').style.display = 'none';
+      return;
+    }
+
+    const data = await response.json();
+
+    hideApiLoader()
+
+    if (data.success && data.user) {
+      USER = data.user;
+      document.getElementById('authModal').style.display = 'none';
+      document.getElementById('userMenuContainer').style.display = 'inline-block';
+    }
+  } catch (err) {
+    console.error("Erreur lors de la vérification de session :", err);
+  }
+}
+
+
+/* ===================================================================== */
+/* 10. THÈMES ET PRÉFÉRENCES                                            */
+/* ===================================================================== */
+
+async function applyStoredTheme() {
+  try {
+
+    showApiLoader()
+
+    const response = await fetch('./api/user/preferences', {
+      method: 'GET',
+      credentials: 'include'
+    });
+
+    if (!response.ok) return;
+
+    const data = await response.json();
+
+    hideApiLoader()
+
+    if (data.success && data.preferences) {
+      const theme = data.preferences.theme || 'light';
+      document.documentElement.setAttribute('data-theme', theme);
+      document.documentElement.classList.toggle("dark-theme", theme === "dark");
+    }
+  } catch (error) {
+    console.error('Erreur réseau :', error);
+  }
+}
+
+function setTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  document.documentElement.classList.toggle("dark-theme", theme === "dark");
+
+  updateThemeMenuUI();
+  const menu = document.getElementById("themeMenu");
+  if (menu) menu.classList.remove("active");
+
+  changeUserTheme(theme);
+}
+
+function updateThemeMenuUI() {
+  const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+  document.querySelectorAll(".theme-menu-item").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.theme === currentTheme);
+  });
+}
+
+function toggleThemeMenu(event) {
+  event.stopPropagation();
+  const menu = document.getElementById("themeMenu");
+  if (menu) menu.classList.toggle("active");
+  updateThemeMenuUI();
+}
+
+async function changeUserTheme(newTheme) {
+  try {
+
+    showApiLoader()
+
+    const response = await fetch('./api/user/preferences', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ theme: newTheme }),
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      console.error('Erreur HTTP :', response.status);
+      return;
+    }
+
+    const data = await response.json();
+
+    hideApiLoader()
+
+    if (data.success) {
+      document.documentElement.setAttribute('data-theme', data.theme);
+    } else {
+      console.warn('Impossible de sauvegarder le thème :', data.error);
+    }
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour du thème :', error);
+  }
+}
+
+
+/* ===================================================================== */
+/* 11. MODALS, PARAMÈTRES ET NAVIGATION MOBILE                           */
+/* ===================================================================== */
+
+
+
+function openSettingsModal(isNew = false) {
+  isCreatingNewGrid = isNew;
+  document.getElementById('settingsModalTitle').textContent = isNew ? "Nouvelle grille" : "Paramètres de la grille";
+  document.getElementById('settingName').value = isNew ? "Nouvelle Grille" : currentGridName;
+  document.getElementById('settingCols').value = COLS;
+  document.getElementById('settingRows').value = ROWS;
+  document.getElementById('settingsModal').classList.add('active');
+}
+
+function closeSettingsModal() { 
+  document.getElementById("settingsModal").classList.remove("active"); 
+}
+
+function closeSettingsModalOnOverlay(event) { 
+  if (event.target.id === "settingsModal") closeSettingsModal(); 
+}
 
 async function applySettings() {
   const newName = document.getElementById('settingName').value.trim() || "Grille Sans Nom";
@@ -1049,6 +1668,9 @@ async function applySettings() {
   } else {
     if (currentGridId) {
       try {
+
+        showApiLoader()
+
         const response = await fetch(`./api/grids/${currentGridId}`, { 
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -1061,6 +1683,9 @@ async function applySettings() {
           })
         });
         const data = await response.json();
+
+        hideApiLoader()
+
         if (!data.success) {
           console.error("Erreur lors de la mise à jour des paramètres :", data.error);
           alert("Erreur lors de l'enregistrement des paramètres dans le cloud.");
@@ -1077,8 +1702,6 @@ async function applySettings() {
   updateGridDisplay();
   closeSettingsModal();
 }
-
-let isSaveAsMode = false;
 
 function openSaveModal(isSaveAs) {
   isSaveAsMode = isSaveAs;
@@ -1147,376 +1770,6 @@ async function confirmSave(destination) {
   }
 }
 
-function closeLoadModal() { document.getElementById("loadModal").classList.remove("active"); }
-function closeLoadModalOnOverlay(event) { if (event.target.id === "loadModal") closeLoadModal(); }
-
-async function loadSelectedGrid(name) {
-  const savedGrids = await getSavedGrids();
-  const data = savedGrids[name];
-
-  if (data) {
-    if (Array.isArray(data)) {
-      COLS = 13;
-      ROWS = 17;
-      cells = data;
-      currentGridId = null;
-    } else {
-      COLS = data.cols;
-      ROWS = data.rows;
-      cells = data.cells;
-      currentGridId = data.id || null;
-    }
-
-    currentGridName = name;
-    selected = null;
-
-    updateGridDisplay();
-
-    if (typeof updateGridGeometry === 'function') {
-      updateGridGeometry();
-    }
-
-    closeLoadModal();
-  }
-}
-
-function persistSession() {
-  if (sessionRestorePending) return;
-  try {
-    localStorage.setItem("motsFlechesLastSession", JSON.stringify({
-      name: currentGridName, cols: COLS, rows: ROWS, cells: cells
-    }));
-  } catch (e) {}
-}
-
-async function checkPreviousSession() {
-  try {
-    const savedGrids = await getSavedGrids();
-    const gridNames = Object.keys(savedGrids);
-
-    if (gridNames.length === 0) return;
-
-    const lastName = gridNames[gridNames.length - 1];
-    const lastGridData = savedGrids[lastName];
-
-    if (!lastGridData || !lastGridData.cells || lastGridData.cells.length === 0) return;
-
-    sessionRestorePending = true;
-    pendingSessionData = {
-      name: lastName,
-      cols: lastGridData.cols || 13,
-      rows: lastGridData.rows || 17,
-      cells: lastGridData.cells,
-      id: lastGridData.id || null
-    };
-
-    const modal = document.getElementById("restoreModal");
-    if (modal) modal.classList.add("active");
-
-  } catch (e) {
-    console.error("Erreur lors de la vérification des sessions cloud :", e);
-  }
-}
-
-function restorePreviousSession() {
-  if (pendingSessionData) {
-    COLS = pendingSessionData.cols || 13;
-    ROWS = pendingSessionData.rows || 17;
-    cells = pendingSessionData.cells;
-    currentGridName = pendingSessionData.name || "Ma Grille";
-    currentGridId = pendingSessionData.id || null;
-  }
-  sessionRestorePending = false;
-  pendingSessionData = null;
-  selected = null;
-
-  updateGridDisplay();
-
-  if (typeof updateGridGeometry === 'function') {
-    updateGridGeometry();
-  }
-
-  closeRestoreModal();
-}
-
-function openSession() {
-  openLoadModal();
-  closeRestoreModal();
-}
-
-function discardPreviousSession() {
-  sessionRestorePending = false;
-  pendingSessionData = null;
-  closeRestoreModal();
-  persistSession();
-  newGrid();
-}
-
-function closeRestoreModal() {
-  const modal = document.getElementById("restoreModal");
-  if (modal) modal.classList.remove("active");
-}
-
-function toggleThemeMenu(event) {
-  event.stopPropagation();
-  const menu = document.getElementById("themeMenu");
-  if (menu) menu.classList.toggle("active");
-  updateThemeMenuUI();
-}
-
-// --- REST API : applyStoredTheme ---
-async function applyStoredTheme() {
-  try {
-    const response = await fetch('./api/user/preferences', {
-      method: 'GET',
-      credentials: 'include'
-    });
-
-    if (!response.ok) return;
-
-    const data = await response.json();
-    if (data.success && data.preferences) {
-      const theme = data.preferences.theme || 'light';
-      document.documentElement.setAttribute('data-theme', theme);
-      document.documentElement.classList.toggle("dark-theme", theme === "dark");
-    }
-  } catch (error) {
-    console.error('Erreur réseau :', error);
-  }
-}
-
-function setTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-  document.documentElement.classList.toggle("dark-theme", theme === "dark");
-
-  updateThemeMenuUI();
-  const menu = document.getElementById("themeMenu");
-  if (menu) menu.classList.remove("active");
-
-  changeUserTheme(theme);
-}
-
-function updateThemeMenuUI() {
-  const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
-  document.querySelectorAll(".theme-menu-item").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.theme === currentTheme);
-  });
-}
-
-function openHelpModal() { document.getElementById("helpModal").classList.add("active"); }
-function closeHelpModal() { document.getElementById("helpModal").classList.remove("active"); }
-function closeHelpModalOnOverlay(event) { if (event.target.id === "helpModal") closeHelpModal(); }
-
-let openSectionId = null;
-
-function openSectionModal(id) {
-  closeAllSectionModals();
-  const el = document.getElementById(id);
-  if (el) el.classList.add("mobile-open");
-  const backdrop = document.getElementById("mobileSectionBackdrop");
-  if (backdrop) backdrop.classList.add("active");
-  openSectionId = id;
-}
-
-function closeAllSectionModals() {
-  document.querySelectorAll(".main-section.mobile-open").forEach(el => el.classList.remove("mobile-open"));
-  const backdrop = document.getElementById("mobileSectionBackdrop");
-  if (backdrop) backdrop.classList.remove("active");
-  openSectionId = null;
-}
-
-function toggleMobileMenu(event) {
-  if (event) event.stopPropagation();
-  const topbar = document.querySelector(".topbar");
-  const backdrop = document.getElementById("mobileMenuBackdrop");
-  if (!topbar) return;
-  const isOpen = topbar.classList.toggle("mobile-menu-open");
-  if (backdrop) backdrop.classList.toggle("active", isOpen);
-}
-
-function closeMobileMenu() {
-  const topbar = document.querySelector(".topbar");
-  const backdrop = document.getElementById("mobileMenuBackdrop");
-  if (topbar) topbar.classList.remove("mobile-menu-open");
-  if (backdrop) backdrop.classList.remove("active");
-}
-
-function importJSON(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function (e) {
-    try {
-      const data = JSON.parse(e.target.result);
-      if (data.cells) {
-        cells = data.cells;
-        COLS = data.cols || 13;
-        ROWS = data.rows || 17;
-        currentGridName = data.name || file.name.replace(".json", "");
-      } else if (Array.isArray(data)) {
-        cells = data; COLS = 13; ROWS = 17;
-        currentGridName = file.name.replace(".json", "");
-      }
-      selected = null;
-      updateGridDisplay();
-    } catch (err) {
-      alert("Fichier JSON invalide.");
-    }
-  };
-  reader.readAsText(file);
-}
-
-function switchAuthTab(tab) {
-  const loginForm = document.getElementById('loginForm');
-  const registerForm = document.getElementById('registerForm');
-  const tabLoginBtn = document.getElementById('tabLoginBtn');
-  const tabRegisterBtn = document.getElementById('tabRegisterBtn');
-
-  if (tab === 'login') {
-    loginForm.style.display = 'block';
-    registerForm.style.display = 'none';
-    tabLoginBtn.classList.add('active');
-    tabRegisterBtn.classList.remove('active');
-  } else {
-    loginForm.style.display = 'none';
-    registerForm.style.display = 'block';
-    tabRegisterBtn.classList.add('active');
-    tabLoginBtn.classList.remove('active');
-  }
-}
-
-// --- REST API : handleLogin ---
-async function handleLogin(event) {
-  event.preventDefault();
-  const email = document.getElementById('loginEmail').value;
-  const password = document.getElementById('loginPassword').value;
-  const errorDiv = document.getElementById('loginError');
-  errorDiv.textContent = '';
-
-  try {
-    const response = await fetch('./api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ email, password })
-    });
-    const data = await response.json();
-    if (data.success) {
-      document.getElementById('authModal').style.display = 'none';
-      checkUserSession();
-    } else {
-      errorDiv.textContent = data.error || 'Erreur de connexion';
-    }
-  } catch (err) {
-    errorDiv.textContent = 'Impossible de contacter le serveur.';
-  }
-}
-
-// --- REST API : handleRegister ---
-async function handleRegister(event) {
-  event.preventDefault();
-  const first_name = document.getElementById('regFirstName').value;
-  const last_name = document.getElementById('regLastName').value;
-  const email = document.getElementById('regEmail').value;
-  const password = document.getElementById('regPassword').value;
-  const errorDiv = document.getElementById('registerError');
-  errorDiv.textContent = '';
-
-  try {
-    const response = await fetch('./api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ first_name, last_name, email, password })
-    });
-    const data = await response.json();
-
-    if (data.success) {
-      document.getElementById('authModal').style.display = 'none';
-      checkUserSession();
-    } else {
-      errorDiv.textContent = data.error || 'Erreur lors de l\'inscription';
-    }
-  } catch (err) {
-    errorDiv.textContent = 'Impossible de contacter le serveur.';
-  }
-}
-
-// --- REST API : handleLogout ---
-async function handleLogout() {
-  try {
-    await fetch('./api/auth/logout', {
-      method: 'POST',
-      credentials: 'include'
-    });
-    location.reload();
-  } catch (err) {
-    console.error('Erreur lors de la déconnexion');
-  }
-}
-
-// --- REST API : checkUserSession ---
-async function checkUserSession() {
-  try {
-    const response = await fetch('./api/user', {
-      method: 'GET',
-      credentials: 'include'
-    });
-
-    if (response.status === 401) {
-      document.getElementById('authModal').style.display = 'flex';
-      document.getElementById('userMenuContainer').style.display = 'none';
-      return;
-    }
-
-    const data = await response.json();
-
-    if (data.success && data.user) {
-      USER = data.user;
-      document.getElementById('authModal').style.display = 'none';
-      document.getElementById('userMenuContainer').style.display = 'inline-block';
-    }
-  } catch (err) {
-    console.error("Erreur lors de la vérification de session :", err);
-  }
-}
-
-// --- REST API : getSavedGrids ---
-async function getSavedGrids() {
-  try {
-    const response = await fetch('./api/grids', {
-      method: 'GET',
-      credentials: 'include'
-    });
-    const data = await response.json();
-
-    if (data.success && data.grids) {
-      const gridsMap = {};
-      data.grids.forEach(grid => {
-        const rawContent = grid.content || grid.grid_data;
-        let gridContent = typeof rawContent === 'string'
-          ? JSON.parse(rawContent)
-          : rawContent;
-
-        let finalCols = grid.cols !== undefined ? parseInt(grid.cols, 10) : (gridContent.cols || 13);
-        let finalRows = grid.rows !== undefined ? parseInt(grid.rows, 10) : (gridContent.rows || 17);
-        let finalCells = Array.isArray(gridContent) ? gridContent : (gridContent.cells || gridContent);
-
-        gridsMap[grid.name] = {
-          id: grid.id,
-          cols: finalCols,
-          rows: finalRows,
-          cells: finalCells
-        };
-      });
-      return gridsMap;
-    }
-  } catch (err) {
-    console.error("Erreur lors du chargement des grilles depuis le cloud :", err);
-  }
-  return {};
-}
-
 async function openLoadModal() {
   const modal = document.getElementById("loadModal");
   const body = document.getElementById("modalBody");
@@ -1566,48 +1819,12 @@ async function openLoadModal() {
   modal.classList.add("active");
 }
 
-// --- REST API : deleteSavedGrid ---
-async function deleteSavedGrid(name, gridId) {
-  if (!confirm(`Supprimer la grille "${name}" du cloud ?`)) return;
-
-  try {
-    const response = await fetch(`./api/grids/${gridId}`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include'
-    });
-
-    const rawText = await response.text();
-    let data;
-
-    try {
-      data = JSON.parse(rawText);
-    } catch (e) {
-      console.error("Réponse serveur invalide (non-JSON) :", rawText);
-      alert("Erreur serveur : Le script PHP a renvoyé du code HTML ou une erreur.");
-      return;
-    }
-
-    if (data.success) {
-      openLoadModal();
-    } else {
-      alert(data.error || "Erreur lors de la suppression.");
-    }
-  } catch (err) {
-    console.error("Erreur réseau :", err);
-    alert("Impossible de contacter le serveur pour la suppression.");
-  }
+function closeLoadModal() { 
+  document.getElementById("loadModal").classList.remove("active"); 
 }
 
-function clearGrid() {
-  const modal = document.getElementById("clearGridModal");
-  if (modal) {
-    modal.classList.add("active");
-  } else {
-    if (confirm("Vider toute la grille ?")) {
-      executeClearGrid();
-    }
-  }
+function closeLoadModalOnOverlay(event) { 
+  if (event.target.id === "loadModal") closeLoadModal(); 
 }
 
 function closeClearModal() {
@@ -1623,31 +1840,18 @@ function closeClearModalOnOverlay(event) {
   }
 }
 
-function executeClearGrid() {
-  cells = Array.from({ length: COLS * ROWS }, emptyCell);
-  selected = null;
-  render();
-  closeClearModal();
-}
-
 function openThemeModal() {
   const modal = document.getElementById("themeModal");
-  if (modal) {
-    modal.classList.add("active");
-  }
+  if (modal) modal.classList.add("active");
 }
 
 function closeThemeModal() {
   const modal = document.getElementById("themeModal");
-  if (modal) {
-    modal.classList.remove("active");
-  }
+  if (modal) modal.classList.remove("active");
 }
 
 function closeThemeModalOnOverlay(event) {
-  if (event.target.id === "themeModal") {
-    closeThemeModal();
-  }
+  if (event.target.id === "themeModal") closeThemeModal();
 }
 
 function selectThemeAndClose(themeName) {
@@ -1678,66 +1882,70 @@ function openUserModal() {
 
 function closeUserModal() {
   const modal = document.getElementById("userModal");
-  if (modal) {
-    modal.classList.remove("active");
-  }
+  if (modal) modal.classList.remove("active");
 }
 
 function closeUserModalOnOverlay(event) {
-  if (event.target.id === "userModal") {
-    closeUserModal();
-  }
+  if (event.target.id === "userModal") closeUserModal();
 }
 
-function resetZoom() {
-  if (typeof updateGridGeometry === 'function') {
-    updateGridGeometry();
-  }
+function openHelpModal() { 
+  document.getElementById("helpModal").classList.add("active"); 
 }
 
-function zoomStep(delta) {
-  const editorContainer = document.querySelector('.editor');
-  if (!editorContainer) return;
-
-  const prevScale = scale;
-  scale = delta > 0 ? Math.min(scale + delta, 2.5) : Math.max(scale + delta, 0.4);
-
-  const rect = editorContainer.getBoundingClientRect();
-  const centerX = rect.width / 2;
-  const centerY = rect.height / 2;
-
-  pointX = centerX - (centerX - pointX) * (scale / prevScale);
-  pointY = centerY - (centerY - pointY) * (scale / prevScale);
-
-  if (setTransform) setTransform();
+function closeHelpModal() { 
+  document.getElementById("helpModal").classList.remove("active"); 
 }
 
-function zoomIn() { zoomStep(0.15); }
-function zoomOut() { zoomStep(-0.15); }
+function closeHelpModalOnOverlay(event) { 
+  if (event.target.id === "helpModal") closeHelpModal(); 
+}
 
-// --- REST API : changeUserTheme ---
-async function changeUserTheme(newTheme) {
-  try {
-    const response = await fetch('./api/user/preferences', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ theme: newTheme }),
-      credentials: 'include'
-    });
+function closeRestoreModal() {
+  const modal = document.getElementById("restoreModal");
+  if (modal) modal.classList.remove("active");
+}
 
-    if (!response.ok) {
-      console.error('Erreur HTTP :', response.status);
-      return;
-    }
+function openSectionModal(id) {
+  closeAllSectionModals();
+  const el = document.getElementById(id);
+  if (el) el.classList.add("mobile-open");
+  const backdrop = document.getElementById("mobileSectionBackdrop");
+  if (backdrop) backdrop.classList.add("active");
+  openSectionId = id;
+}
 
-    const data = await response.json();
+function closeAllSectionModals() {
+  document.querySelectorAll(".main-section.mobile-open").forEach(el => el.classList.remove("mobile-open"));
+  const backdrop = document.getElementById("mobileSectionBackdrop");
+  if (backdrop) backdrop.classList.remove("active");
+  openSectionId = null;
+}
 
-    if (data.success) {
-      document.documentElement.setAttribute('data-theme', data.theme);
-    } else {
-      console.warn('Impossible de sauvegarder le thème :', data.error);
-    }
-  } catch (error) {
-    console.error('Erreur lors de la mise à jour du thème :', error);
-  }
+function toggleMobileMenu(event) {
+  if (event) event.stopPropagation();
+  const topbar = document.querySelector(".topbar");
+  const backdrop = document.getElementById("mobileMenuBackdrop");
+  if (!topbar) return;
+  const isOpen = topbar.classList.toggle("mobile-menu-open");
+  if (backdrop) backdrop.classList.toggle("active", isOpen);
+}
+
+function closeMobileMenu() {
+  const topbar = document.querySelector(".topbar");
+  const backdrop = document.getElementById("mobileMenuBackdrop");
+  if (topbar) topbar.classList.remove("mobile-menu-open");
+  if (backdrop) backdrop.classList.remove("active");
+}
+
+// Afficher le loader
+function showApiLoader() {
+  const loader = document.getElementById("apiLoader");
+  if (loader) loader.classList.add("active");
+}
+
+// Masquer le loader
+function hideApiLoader() {
+  const loader = document.getElementById("apiLoader");
+  if (loader) loader.classList.remove("active");
 }
