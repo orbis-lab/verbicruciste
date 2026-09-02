@@ -1,14 +1,5 @@
 
 
-// Applique le thème sauvegardé le plus tôt possible (avant même le rendu du
-// <body>) afin d'éviter tout effet de flash entre thème clair et sombre.
-(function applyStoredThemeEarly() {
-  try {
-    if (localStorage.getItem("motsFlechesTheme") === "dark") {
-      document.documentElement.classList.add("dark-theme");
-    }
-  } catch (e) { /* stockage indisponible : on ignore */ }
-})();
 
 let currentGridId = null; // ID de la grille active dans la base de données
 let COLS = 13;
@@ -41,8 +32,10 @@ let clickStartX = 0;
 let clickStartY = 0;
 let USER = {}
 
-window.init = function () {
+window.init = async function () {
   const startTime = Date.now();
+
+  applyStoredTheme();
 
   cells = Array.from({ length: COLS * ROWS }, emptyCell);
 
@@ -1414,18 +1407,47 @@ function toggleThemeMenu(event) {
   updateThemeMenuUI();
 }
 
+async function applyStoredTheme() {
+    try {
+        const response = await fetch('api/get_user_preferences.php', {
+            credentials: 'include' 
+        });
+        
+        if (!response.ok) {
+            console.error('Erreur HTTP :', response.status);
+            return;
+        }
+
+        const data = await response.json();
+        if (data.success) {
+            // On applique l'attribut ET la classe pour être compatible avec votre CSS actuel
+            document.documentElement.setAttribute('data-theme', data.theme);
+            document.documentElement.classList.toggle("dark-theme", data.theme === "dark");
+        }
+    } catch (error) {
+        console.error('Erreur réseau :', error);
+    }
+}
+
 function setTheme(theme) {
+  // 1. On met à jour l'attribut HTML (pour l'état global)
+  document.documentElement.setAttribute('data-theme', theme);
+  
+  // 2. On ajoute/retire la classe CSS (pour que vos styles CSS s'activent immédiatement)
   document.documentElement.classList.toggle("dark-theme", theme === "dark");
-  try { localStorage.setItem("motsFlechesTheme", theme); } catch (e) { /* ignore */ }
+  
+ 
   updateThemeMenuUI();
   const menu = document.getElementById("themeMenu");
   if (menu) menu.classList.remove("active");
+  
+  changeUserTheme(theme);
 }
 
 function updateThemeMenuUI() {
-  const isDark = document.documentElement.classList.contains("dark-theme");
+  const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
   document.querySelectorAll(".theme-menu-item").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.theme === (isDark ? "dark" : "light"));
+    btn.classList.toggle("active", btn.dataset.theme === currentTheme);
   });
 }
 
@@ -1898,4 +1920,40 @@ function closeUserModalOnOverlay(event) {
   if (event.target.id === "userModal") {
     closeUserModal();
   }
+}
+// Déclaration de la fonction globale accessible depuis le HTML
+function resetZoom() {
+  // Appelle la logique de centrage et de réinitialisation de la grille
+  if (typeof updateGridGeometry === 'function') {
+    updateGridGeometry();
+  }
+}
+
+
+
+// Optionnel : Fonction pour sauvegarder le changement de thème
+async function changeUserTheme(newTheme) {
+    try {
+        const response = await fetch('api/update_user_preferences.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ theme: newTheme }),
+            credentials: 'include' // Indispensable ici aussi
+        });
+
+        if (!response.ok) {
+            console.error('Erreur HTTP :', response.status);
+            return;
+        }
+
+        const data = await response.json();
+        
+        if (data.success) {
+            document.documentElement.setAttribute('data-theme', data.theme);
+        } else {
+            console.warn('Impossible de sauvegarder le thème :', data.error);
+        }
+    } catch (error) {
+        console.error('Erreur lors de la mise à jour du thème :', error);
+    }
 }

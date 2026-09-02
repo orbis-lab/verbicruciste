@@ -258,14 +258,22 @@
       <img src="./madia/banner.svg" alt="Logo" class="print-banner" />
       <div id="printTitle" class="print-title">Ma Grille</div>
       <div id="grid" class="grid"></div>
-      <div class="zoom-badge">
-        <button class="zoom-btn" id="zoomInBtn" data-tooltip="Zoom avant">
-          <span class="material-symbols-outlined">zoom_in</span>
+      <div class="zoom-controls-wrapper">
+        <!-- Bouton de réinitialisation à gauche -->
+        <button class="zoom-btn  reset-zoom" id="zoomResetBtn" onclick="resetZoom()" data-tooltip="Zoom initial">
+          <span class="material-symbols-outlined">restart_alt</span>
         </button>
-        <span class="zoom-level" id="zoomLevelDisplay">100%</span>
-        <button class="zoom-btn" id="zoomOutBtn" data-tooltip="Zoom arrière">
-          <span class="material-symbols-outlined">zoom_out</span>
-        </button>
+
+        <!-- Badge de zoom habituel (sans le bouton reset à l'intérieur) -->
+        <div class="zoom-badge">
+          <button class="zoom-btn" id="zoomInBtn" data-tooltip="Zoom avant">
+            <span class="material-symbols-outlined">zoom_in</span>
+          </button>
+          <span class="zoom-level" id="zoomLevelDisplay">80%</span>
+          <button class="zoom-btn" id="zoomOutBtn" data-tooltip="Zoom arrière">
+            <span class="material-symbols-outlined">zoom_out</span>
+          </button>
+        </div>
       </div>
     </main>
 

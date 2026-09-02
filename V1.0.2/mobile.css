@@ -21,6 +21,22 @@
     overflow: hidden !important;
   }
 
+  /* Empêche les comportements tactiles par défaut (zoom, double-tap pour zoomer) sur l'UI globale */
+  body,
+  header,
+  .modal,
+  aside {
+    touch-action: manipulation;
+    /* Autorise le clic/scroll simple mais bloque les zooms natifs indésirables */
+  }
+
+
+  aside input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
   body {
     display: flex !important;
     flex-direction: column !important;
@@ -85,7 +101,7 @@
   }
 
   /* Colonne vide (3ᵉ colonne de la grille CSS desktop) : inutile sur mobile. */
-  header > div:empty {
+  header>div:empty {
     display: none !important;
   }
 
@@ -207,7 +223,7 @@
     min-height: 0;
     display: flex !important;
     flex-direction: column !important;
-    padding: 0 !important;
+    padding: 10px !important;
     gap: 0 !important;
     overflow: hidden !important;
   }
@@ -223,9 +239,9 @@
     height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
-    border-radius: 0 !important;
     box-shadow: none !important;
     overflow: hidden !important;
+        border-radius: 5px !important;
   }
 
   /* --- Boutons flottants de zoom : marge de sécurité par rapport aux bords

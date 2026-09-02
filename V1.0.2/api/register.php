@@ -1,6 +1,6 @@
 <?php
 // api/register.php
-require_once 'config.php'; // Gère déjà CORS, JSON, Session et $pdo
+require_once 'config.php';
 
 $input = json_decode(file_get_contents('php://input'), true);
 
@@ -41,23 +41,31 @@ try {
     $stmt->execute([$email, $passwordHash, $firstName, $lastName]);
     $userId = $pdo->lastInsertId();
 
-    // Création des préférences par défaut pour ce nouvel utilisateur
+    // 1. Insertion dans user_preferences (au pluriel)
     $prefStmt = $pdo->prepare("INSERT INTO user_preferences (user_id, theme) VALUES (?, 'light')");
     $prefStmt->execute([$userId]);
 
+    // 2. Insertion dans user_session
+    $sessionStmt = $pdo->prepare("INSERT INTO user_sessions (user_id, grid_id, last_opened_at) VALUES (?, NULL, NOW())");
+    $sessionStmt->execute([$userId]);
+
     $pdo->commit();
 
-    // La session est déjà active grâce à config.php, on enregistre l'utilisateur dedans
     $_SESSION['user_id'] = $userId;
     $_SESSION['email'] = $email;
 
     echo json_encode(['success' => true, 'message' => 'Compte créé avec succès.']);
 
-} catch (Exception $e) {
+} catch (Throwable $e) { // <-- Throwable capture TOUTES les erreurs (exceptions + erreurs fatales PHP)
     if (isset($pdo) && $pdo->inTransaction()) {
         $pdo->rollBack();
     }
     http_response_code(500);
-    // AFFICHER LA VRAIE ERREUR TEMPORAIREMENT POUR DEBUG
-    echo json_encode(['success' => false, 'error' => 'Erreur SQL : ' . $e->getMessage()]);
+    // Renvoie le message d'erreur précis, le fichier et la ligne exacte dans le JSON
+    echo json_encode([
+        'success' => false, 
+        'error' => 'Erreur : ' . $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine()
+    ]);
 }
