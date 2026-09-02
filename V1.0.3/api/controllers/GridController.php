@@ -39,18 +39,34 @@ class GridController {
         $userId = $this->checkAuth();
         $data = json_decode(file_get_contents('php://input'), true);
         
-        $stmt = $this->pdo->prepare("INSERT INTO grids (user_id, name, cols, `rows`, version, content) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->execute([
-            $userId, 
-            $data['name'] ?? 'Sans nom', 
-            $data['cols'] ?? 13, 
-            $data['rows'] ?? 17, 
-            $data['version'] ?? 2, 
-            json_encode($data['content'] ?? null)
-        ]);
+        try {
+            $stmt = $this->pdo->prepare("INSERT INTO grids (user_id, name, cols, `rows`, version, content) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->execute([
+                $userId, 
+                $data['name'] ?? 'Sans nom', 
+                $data['cols'] ?? 13, 
+                $data['rows'] ?? 17, 
+                $data['version'] ?? 2, 
+                json_encode($data['content'] ?? null)
+            ]);
 
-        http_response_code(201);
-        echo json_encode(['success' => true, 'id' => $this->pdo->lastInsertId(), 'message' => 'Grille créée']);
+            http_response_code(201);
+            echo json_encode(['success' => true, 'id' => $this->pdo->lastInsertId(), 'message' => 'Grille créée']);
+        } catch (PDOException $e) {
+            if ($e->getCode() == '23000' || strpos($e->getMessage(), '1062 Duplicate entry') !== false) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false, 
+                    'error' => 'Une grille portant ce nom existe déjà. Veuillez en choisir un autre.'
+                ]);
+            } else {
+                http_response_code(500);
+                echo json_encode([
+                    'success' => false, 
+                    'error' => 'Erreur interne du serveur lors de la création.'
+                ]);
+            }
+        }
     }
 
     // PUT /api/grids/{id} (Mise à jour)
@@ -58,18 +74,34 @@ class GridController {
         $userId = $this->checkAuth();
         $data = json_decode(file_get_contents('php://input'), true);
 
-        $stmt = $this->pdo->prepare("UPDATE grids SET name = ?, cols = ?, `rows` = ?, version = ?, content = ? WHERE id = ? AND user_id = ?");
-        $stmt->execute([
-            $data['name'] ?? 'Sans nom',
-            $data['cols'] ?? 13,
-            $data['rows'] ?? 17,
-            $data['version'] ?? 2,
-            json_encode($data['content'] ?? null),
-            $id,
-            $userId
-        ]);
+        try {
+            $stmt = $this->pdo->prepare("UPDATE grids SET name = ?, cols = ?, `rows` = ?, version = ?, content = ? WHERE id = ? AND user_id = ?");
+            $stmt->execute([
+                $data['name'] ?? 'Sans nom',
+                $data['cols'] ?? 13,
+                $data['rows'] ?? 17,
+                $data['version'] ?? 2,
+                json_encode($data['content'] ?? null),
+                $id,
+                $userId
+            ]);
 
-        echo json_encode(['success' => true, 'message' => 'Grille mise à jour']);
+            echo json_encode(['success' => true, 'message' => 'Grille mise à jour']);
+        } catch (PDOException $e) {
+            if ($e->getCode() == '23000' || strpos($e->getMessage(), '1062 Duplicate entry') !== false) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false, 
+                    'error' => 'Une grille portant ce nom existe déjà. Veuillez en choisir un autre.'
+                ]);
+            } else {
+                http_response_code(500);
+                echo json_encode([
+                    'success' => false, 
+                    'error' => 'Erreur interne du serveur lors de la mise à jour.'
+                ]);
+            }
+        }
     }
 
     // DELETE /api/grids/{id}

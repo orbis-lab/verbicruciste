@@ -271,12 +271,12 @@ function zoomStep(delta) {
   if (setTransform) setTransform();
 }
 
-function zoomIn() { 
-  zoomStep(0.15); 
+function zoomIn() {
+  zoomStep(0.15);
 }
 
-function zoomOut() { 
-  zoomStep(-0.15); 
+function zoomOut() {
+  zoomStep(-0.15);
 }
 
 
@@ -311,9 +311,9 @@ function selectCellAndFocus(index) {
   }
 }
 
-function selectCell(index) { 
-  selected = Number(index); 
-  render(); 
+function selectCell(index) {
+  selected = Number(index);
+  render();
 }
 
 function findDuplicateWords() {
@@ -505,21 +505,21 @@ function render() {
         else if (e.key === "ArrowLeft") { currentInputDir = "E"; moveToNextLetter(-1); return; }
 
         if (e.key === "Backspace") {
-          e.preventDefault(); 
-          cell.letter = ""; 
+          e.preventDefault();
+          cell.letter = "";
           input.value = "";
-          updatePanel(); 
-          updatePlacedWordsList(); 
-          persistSession(); 
+          updatePanel();
+          updatePlacedWordsList();
+          persistSession();
           moveToNextLetter(-1);
         } else if (e.key.length === 1 && /[a-zA-ZÀ-ÿ]/.test(e.key)) {
-          e.preventDefault(); 
-          const char = e.key.toUpperCase(); 
-          cell.letter = char; 
+          e.preventDefault();
+          const char = e.key.toUpperCase();
+          cell.letter = char;
           input.value = char;
-          updatePanel(); 
-          updatePlacedWordsList(); 
-          persistSession(); 
+          updatePanel();
+          updatePlacedWordsList();
+          persistSession();
           moveToNextLetter(1);
         }
       });
@@ -535,11 +535,11 @@ function render() {
         currentInputDir = cell.arrow;
         selectCellSilently(index);
       });
-      editable.addEventListener("input", e => { 
-        cell.definition = e.target.innerText.toUpperCase(); 
-        const sideInput = document.getElementById("definitionInput"); 
-        if (sideInput) sideInput.value = cell.definition; 
-        persistSession(); 
+      editable.addEventListener("input", e => {
+        cell.definition = e.target.innerText.toUpperCase();
+        const sideInput = document.getElementById("definitionInput");
+        if (sideInput) sideInput.value = cell.definition;
+        persistSession();
       });
       el.appendChild(editable);
       const svg = createArrowSVG(cell.arrow, "full");
@@ -548,9 +548,9 @@ function render() {
 
     if (cell.type === "double") {
       el.innerHTML = `<div class="half"><div class="def-editable" contenteditable="true"></div></div><div class="half"><div class="def-editable" contenteditable="true"></div></div>`;
-      const halves = el.querySelectorAll(".half"); 
+      const halves = el.querySelectorAll(".half");
       const editables = el.querySelectorAll(".def-editable");
-      editables[0].innerText = cell.top.definition; 
+      editables[0].innerText = cell.top.definition;
       editables[1].innerText = cell.bottom.definition;
 
       editables[0].addEventListener("focus", () => { currentInputDir = "E"; selectCellSilently(index); const sideInput = document.getElementById("topDefinitionInput"); if (sideInput) sideInput.value = cell.top.definition; });
@@ -571,7 +571,7 @@ function render() {
     });
     grid.appendChild(el);
   });
-  
+
   updatePanel();
   updatePlacedWordsList();
   persistSession();
@@ -612,23 +612,23 @@ function createArrowSVG(dir, zone) {
 }
 
 function updatePanel() {
-  document.querySelectorAll(".type-buttons button").forEach(btn => { 
-    btn.classList.toggle("active", selected !== null && btn.dataset.type === cells[selected].type); 
+  document.querySelectorAll(".type-buttons button").forEach(btn => {
+    btn.classList.toggle("active", selected !== null && btn.dataset.type === cells[selected].type);
   });
   const info = document.getElementById("selectedInfo");
   const single = document.getElementById("singleDefControls");
   const dbl = document.getElementById("doubleDefControls");
   const wordContainer = document.getElementById("wordFormedContainer");
 
-  if (selected === null) { 
-    info.textContent = "Cliquez sur une case de la grille."; 
-    single.style.display = "none"; 
-    dbl.style.display = "none"; 
-    wordContainer.innerHTML = ""; 
-    return; 
+  if (selected === null) {
+    info.textContent = "Cliquez sur une case de la grille.";
+    single.style.display = "none";
+    dbl.style.display = "none";
+    wordContainer.innerHTML = "";
+    return;
   }
 
-  const row = Math.floor(selected / COLS) + 1; 
+  const row = Math.floor(selected / COLS) + 1;
   const col = selected % COLS + 1;
   info.textContent = `Case : colonne ${col}, ligne ${row}`;
   const cell = cells[selected];
@@ -640,14 +640,14 @@ function updatePanel() {
     document.getElementById("definitionInput").value = cell.definition;
     document.getElementById("btnArrowE").classList.toggle("active", cell.arrow === "E");
     document.getElementById("btnArrowS").classList.toggle("active", cell.arrow === "S");
-    const data = getWordData(selected, cell.arrow); 
+    const data = getWordData(selected, cell.arrow);
     renderWordBox(wordContainer, "Mot formé", data.word, data.indexes, "word-def", cell.arrow);
   }
 
   if (cell.type === "double") {
     document.getElementById("topDefinitionInput").value = cell.top.definition;
     document.getElementById("bottomDefinitionInput").value = cell.bottom.definition;
-    const dataTop = getWordData(selected, "E"); 
+    const dataTop = getWordData(selected, "E");
     const dataBot = getWordData(selected, "S");
     renderWordBox(wordContainer, "Mot du haut", dataTop.word, dataTop.indexes, "word-top", "E");
     renderWordBox(wordContainer, "Mot du bas", dataBot.word, dataBot.indexes, "word-bot", "S");
@@ -681,9 +681,9 @@ function updatePlacedWordsList() {
   wordsCountEl.textContent = `${wordsArray.length} mot${wordsArray.length > 1 ? 's' : ''} trouvé${wordsArray.length > 1 ? 's' : ''}`;
   wordsListEl.innerHTML = "";
 
-  if (wordsArray.length === 0) { 
-    wordsListEl.innerHTML = "<div style='font-size:12px;color:#888;font-style:italic;'>Aucun mot dans la grille</div>"; 
-    return; 
+  if (wordsArray.length === 0) {
+    wordsListEl.innerHTML = "<div style='font-size:12px;color:#888;font-style:italic;'>Aucun mot dans la grille</div>";
+    return;
   }
 
   const groupedByLength = {};
@@ -691,22 +691,22 @@ function updatePlacedWordsList() {
   const sortedLengths = Object.keys(groupedByLength).map(Number).sort((a, b) => a - b);
 
   sortedLengths.forEach(len => {
-    const groupDiv = document.createElement("div"); 
+    const groupDiv = document.createElement("div");
     groupDiv.className = "word-group";
-    const titleDiv = document.createElement("div"); 
-    titleDiv.className = "word-group-title"; 
-    titleDiv.textContent = `${len} lettres :`; 
+    const titleDiv = document.createElement("div");
+    titleDiv.className = "word-group-title";
+    titleDiv.textContent = `${len} lettres :`;
     groupDiv.appendChild(titleDiv);
-    
+
     groupedByLength[len].sort((a, b) => a.text.localeCompare(b.text, 'fr'));
 
     groupedByLength[len].forEach(item => {
-      const wordEl = document.createElement("div"); 
-      wordEl.className = "word-item"; 
+      const wordEl = document.createElement("div");
+      wordEl.className = "word-item";
       wordEl.textContent = item.text;
-      if (duplicateWordStrings.has(item.text)) { 
-        wordEl.classList.add("is-duplicate"); 
-        wordEl.title = "Mot présent plusieurs fois !"; 
+      if (duplicateWordStrings.has(item.text)) {
+        wordEl.classList.add("is-duplicate");
+        wordEl.title = "Mot présent plusieurs fois !";
       }
       wordEl.addEventListener("mouseenter", () => { hoveredWordIndexes = item.indexes; updateHighlights(); });
       wordEl.addEventListener("mouseleave", () => { hoveredWordIndexes = []; updateHighlights(); });
@@ -791,15 +791,15 @@ function renderWordBox(container, labelText, word, indexes, idPrefix, dir) {
 /* ===================================================================== */
 
 function setType(type) {
-  if (selected === null || selected === undefined || Number.isNaN(Number(selected))) { 
-    alert("Sélectionnez d'abord une case."); 
-    return; 
+  if (selected === null || selected === undefined || Number.isNaN(Number(selected))) {
+    showCustomAlert("Sélectionnez d'abord une case.");
+    return;
   }
   selected = Number(selected);
   cells[selected].type = type;
-  if (type === "double") { 
-    cells[selected].top.arrow = "E"; 
-    cells[selected].bottom.arrow = "S"; 
+  if (type === "double") {
+    cells[selected].top.arrow = "E";
+    cells[selected].bottom.arrow = "S";
   }
   render();
   if (type === "definition") focusDefinitionCell(selected);
@@ -809,78 +809,78 @@ function setType(type) {
 
 function focusDefinitionCell(index) {
   setTimeout(() => {
-    const grid = document.getElementById("grid"); 
+    const grid = document.getElementById("grid");
     const cellEl = grid.children[index];
     if (cellEl) {
       const defEditable = cellEl.querySelector(".def-content");
       if (defEditable) {
-        defEditable.focus(); 
-        const range = document.createRange(); 
+        defEditable.focus();
+        const range = document.createRange();
         const sel = window.getSelection();
-        range.selectNodeContents(defEditable); 
-        range.collapse(false); 
-        sel.removeAllRanges(); 
+        range.selectNodeContents(defEditable);
+        range.collapse(false);
+        sel.removeAllRanges();
         sel.addRange(range);
       }
     }
   }, 10);
 }
 
-function focusDoubleDefinitionCell(index) { 
-  setTimeout(() => { 
-    const grid = document.getElementById("grid"); 
-    const cellEl = grid.children[index]; 
-    if (cellEl) { 
-      const firstEditable = cellEl.querySelector(".def-editable"); 
-      if (firstEditable) firstEditable.focus(); 
-    } 
-  }, 10); 
+function focusDoubleDefinitionCell(index) {
+  setTimeout(() => {
+    const grid = document.getElementById("grid");
+    const cellEl = grid.children[index];
+    if (cellEl) {
+      const firstEditable = cellEl.querySelector(".def-editable");
+      if (firstEditable) firstEditable.focus();
+    }
+  }, 10);
 }
 
-function fillWordInGrid(word, indexes) { 
-  for (let i = 0; i < indexes.length; i++) { 
-    if (i < word.length) cells[indexes[i]].letter = word[i]; 
-  } 
-  render(); 
+function fillWordInGrid(word, indexes) {
+  for (let i = 0; i < indexes.length; i++) {
+    if (i < word.length) cells[indexes[i]].letter = word[i];
+  }
+  render();
 }
 
-function updateDefinition(value) { 
-  if (selected !== null) { 
-    cells[selected].definition = value.toUpperCase(); 
-    const grid = document.getElementById("grid"); 
-    if (grid.children[selected]) { 
-      const def = grid.children[selected].querySelector(".def-content"); 
-      if (def && def !== document.activeElement) def.innerText = cells[selected].definition; 
-    } 
-    persistSession(); 
-  } 
+function updateDefinition(value) {
+  if (selected !== null) {
+    cells[selected].definition = value.toUpperCase();
+    const grid = document.getElementById("grid");
+    if (grid.children[selected]) {
+      const def = grid.children[selected].querySelector(".def-content");
+      if (def && def !== document.activeElement) def.innerText = cells[selected].definition;
+    }
+    persistSession();
+  }
 }
 
-function setArrow(direction) { 
-  if (selected !== null && cells[selected].type === "definition") { 
-    cells[selected].arrow = direction; 
-    currentInputDir = direction; 
-    render(); 
-  } 
+function setArrow(direction) {
+  if (selected !== null && cells[selected].type === "definition") {
+    cells[selected].arrow = direction;
+    currentInputDir = direction;
+    render();
+  }
 }
 
-function updateHalfDefinition(which, value) { 
-  if (selected !== null && cells[selected].type === "double") { 
-    cells[selected][which].definition = value.toUpperCase(); 
-    const grid = document.getElementById("grid"); 
-    if (grid.children[selected]) { 
-      const editables = grid.children[selected].querySelectorAll(".def-editable"); 
-      const idx = which === "top" ? 0 : 1; 
-      if (editables[idx] && editables[idx] !== document.activeElement) editables[idx].innerText = cells[selected][which].definition; 
-    } 
-    persistSession(); 
-  } 
+function updateHalfDefinition(which, value) {
+  if (selected !== null && cells[selected].type === "double") {
+    cells[selected][which].definition = value.toUpperCase();
+    const grid = document.getElementById("grid");
+    if (grid.children[selected]) {
+      const editables = grid.children[selected].querySelectorAll(".def-editable");
+      const idx = which === "top" ? 0 : 1;
+      if (editables[idx] && editables[idx] !== document.activeElement) editables[idx].innerText = cells[selected][which].definition;
+    }
+    persistSession();
+  }
 }
 
-function clearCell() { 
-  if (selected === null) return; 
-  cells[selected] = emptyCell(); 
-  render(); 
+function clearCell() {
+  if (selected === null) return;
+  cells[selected] = emptyCell();
+  render();
 }
 
 
@@ -1130,7 +1130,7 @@ function persistSession() {
     localStorage.setItem("motsFlechesLastSession", JSON.stringify({
       name: currentGridName, cols: COLS, rows: ROWS, cells: cells
     }));
-  } catch (e) {}
+  } catch (e) { }
 }
 
 async function getSavedGrids() {
@@ -1172,9 +1172,23 @@ async function getSavedGrids() {
   return {};
 }
 
+async function directSaveGrid() {
+  const payload = {
+    id: currentGridId,
+    name: currentGridName,
+    cols: COLS,
+    rows: ROWS,
+    version: 2,
+    content: cells
+  };
+
+  saveGridToCloud(payload);
+  updateGridDisplay();
+}
+
 function saveGridToCloud(gridData) {
   const payload = {
-    id: currentGridId, 
+    id: currentGridId,
     name: currentGridName,
     cols: COLS,
     rows: ROWS,
@@ -1205,7 +1219,7 @@ function saveGridToCloud(gridData) {
         }
         console.log("Grille sauvegardée dans le cloud avec succès !");
       } else {
-        alert("Erreur : " + (data.error || "Impossible de sauvegarder la grille."));
+        showCustomAlert("Erreur : " + (data.error || "Impossible de sauvegarder la grille."));
       }
     })
     .catch(error => {
@@ -1215,11 +1229,12 @@ function saveGridToCloud(gridData) {
 }
 
 async function deleteSavedGrid(name, gridId) {
-  if (!confirm(`Supprimer la grille "${name}" du cloud ?`)) return;
+  // Remplacement du confirm natif par le custom avec await
+  const confirmed = await showCustomConfirm(`Supprimer la grille "${name}" du cloud ?`);
+  if (!confirmed) return;
 
   try {
-
-    showApiLoader()
+    showApiLoader();
 
     const response = await fetch(`./api/grids/${gridId}`, {
       method: 'DELETE',
@@ -1237,18 +1252,18 @@ async function deleteSavedGrid(name, gridId) {
       data = JSON.parse(rawText);
     } catch (e) {
       console.error("Réponse serveur invalide (non-JSON) :", rawText);
-      alert("Erreur serveur : Le script PHP a renvoyé du code HTML ou une erreur.");
+      showCustomAlert("Erreur serveur : Le script PHP a renvoyé du code HTML ou une erreur.");
       return;
     }
 
     if (data.success) {
       openLoadModal();
     } else {
-      alert(data.error || "Erreur lors de la suppression.");
+      showCustomAlert(data.error || "Erreur lors de la suppression.");
     }
   } catch (err) {
     console.error("Erreur réseau :", err);
-    alert("Impossible de contacter le serveur pour la suppression.");
+    showCustomAlert("Impossible de contacter le serveur pour la suppression.");
   }
 }
 
@@ -1315,18 +1330,24 @@ function openSession() {
   closeRestoreModal();
 }
 
-function newGrid() { 
-  openSettingsModal(true); 
+function newGrid() {
+  // On réinitialise complètement l'ID pour forcer la création d'une nouvelle grille au moment de l'enregistrement
+  currentGridId = null;
+
+  currentGridName = "Ma Nouvelle Grille";
+  COLS = 13;
+  ROWS = 17;
+  cells = Array.from({ length: COLS * ROWS }, emptyCell);
+  selected = null;
+
+  updateGridDisplay();
+  openSettingsModal(); // Ouvre les paramètres pour configurer et enregistrer la nouvelle grille proprement
 }
 
-function clearGrid() {
-  const modal = document.getElementById("clearGridModal");
-  if (modal) {
-    modal.classList.add("active");
-  } else {
-    if (confirm("Vider toute la grille ?")) {
-      executeClearGrid();
-    }
+async function clearGrid() {
+  const confirmed = await showCustomConfirm("Voulez-vous vraiment vider toute la grille ?");
+  if (confirmed) {
+    executeClearGrid();
   }
 }
 
@@ -1386,7 +1407,7 @@ function importJSON(event) {
       selected = null;
       updateGridDisplay();
     } catch (err) {
-      alert("Fichier JSON invalide.");
+      showCustomAlert("Fichier JSON invalide.");
     }
   };
   reader.readAsText(file);
@@ -1506,7 +1527,7 @@ async function checkUserSession() {
     });
 
     if (response.status === 401) {
-      document.getElementById('authModal').style.display = 'flex';
+      document.getElementById('authModal').classList.add('active');
       document.getElementById('userMenuContainer').style.display = 'none';
       return;
     }
@@ -1517,8 +1538,9 @@ async function checkUserSession() {
 
     if (data.success && data.user) {
       USER = data.user;
-      document.getElementById('authModal').style.display = 'none';
-      document.getElementById('userMenuContainer').style.display = 'inline-block';
+      // En cas de succès de la connexion :
+      document.getElementById('authModal').classList.remove('active'); // Retire la classe active pour cacher la modale
+      document.getElementById('userMenuContainer').style.display = 'block'; // Réaffiche le menu utilisateur si besoin
     }
   } catch (err) {
     console.error("Erreur lors de la vérification de session :", err);
@@ -1619,88 +1641,133 @@ async function changeUserTheme(newTheme) {
 
 
 
-function openSettingsModal(isNew = false) {
-  isCreatingNewGrid = isNew;
-  document.getElementById('settingsModalTitle').textContent = isNew ? "Nouvelle grille" : "Paramètres de la grille";
-  document.getElementById('settingName').value = isNew ? "Nouvelle Grille" : currentGridName;
+function openSettingsModal() {
+  document.getElementById('settingsModalTitle').textContent = "Paramètres de la grille";
+  document.getElementById('settingName').value = currentGridName;
   document.getElementById('settingCols').value = COLS;
   document.getElementById('settingRows').value = ROWS;
   document.getElementById('settingsModal').classList.add('active');
 }
-
-function closeSettingsModal() { 
-  document.getElementById("settingsModal").classList.remove("active"); 
+function closeSettingsModal() {
+  document.getElementById("settingsModal").classList.remove("active");
 }
 
-function closeSettingsModalOnOverlay(event) { 
-  if (event.target.id === "settingsModal") closeSettingsModal(); 
+function closeSettingsModalOnOverlay(event) {
+  if (event.target.id === "settingsModal") closeSettingsModal();
 }
 
 async function applySettings() {
-  const newName = document.getElementById('settingName').value.trim() || "Grille Sans Nom";
-  const newCols = parseInt(document.getElementById('settingCols').value, 10) || 13;
-  const newRows = parseInt(document.getElementById('settingRows').value, 10) || 17;
+  // 1. Récupérer les valeurs depuis les éléments du DOM de la modale paramètres
+  const nameInput = document.getElementById('settingName');
+  const colsInput = document.getElementById('settingCols');
+  const rowsInput = document.getElementById('settingRows');
 
-  const oldCols = COLS;
-  const oldRows = ROWS;
+  const newName = nameInput ? nameInput.value.trim() : currentGridName;
+  if (!newName) {
+    if (typeof showCustomAlert === 'function') {
+      showCustomAlert("Veuillez entrer un nom valide pour la grille.");
+    } else {
+      showCustomAlert("Veuillez entrer un nom valide pour la grille.");
+    }
+    return;
+  }
+
+  // 2. Vérifier si le nom existe déjà dans le cloud (uniquement si le nom change ou si c'est une nouvelle grille)
+  try {
+    const savedGrids = await getSavedGrids();
+    // Si une autre grille possède déjà ce nom (et qu'on n'est pas en train de modifier exactement la même)
+    if (savedGrids.hasOwnProperty(newName)) {
+      const existingGrid = savedGrids[newName];
+      // Si l'ID est différent de notre grille actuelle, c'est un doublon
+      if (!currentGridId || existingGrid.id !== currentGridId) {
+        const overwrite = await showCustomConfirm(`Une grille portant le nom "${newName}" existe déjà dans le cloud. Voulez-vous l'écraser ?`);
+        if (!overwrite) {
+          return;
+        } else {
+          // Si l'utilisateur accepte d'écraser, on récupère l'ID de la grille existante pour faire un PUT dessus
+          currentGridId = existingGrid.id;
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Erreur lors de la vérification des doublons :", err);
+  }
 
   currentGridName = newName;
-  COLS = newCols;
-  ROWS = newRows;
+  const newCols = colsInput ? parseInt(colsInput.value, 10) : COLS;
+  const newRows = rowsInput ? parseInt(rowsInput.value, 10) : ROWS;
 
-  const newCells = Array.from({ length: COLS * ROWS }, emptyCell);
-
-  for (let r = 0; r < Math.min(oldRows, ROWS); r++) {
-    for (let c = 0; c < Math.min(oldCols, COLS); c++) {
-      const oldIndex = r * oldCols + c;
-      const newIndex = r * COLS + c;
-      if (cells[oldIndex]) {
-        newCells[newIndex] = { ...cells[oldIndex] };
-      }
+  // 3. Si les dimensions changent, on réinitialise ou ajuste le tableau des cellules
+  if (newCols !== COLS || newRows !== ROWS) {
+    COLS = newCols;
+    ROWS = newRows;
+    if (typeof emptyCell === 'function') {
+      cells = Array.from({ length: COLS * ROWS }, emptyCell);
     }
+    selected = null;
   }
 
-  cells = newCells;
-  selected = null;
+  // 4. Déterminer s'il s'agit d'une mise à jour (PUT) ou d'une création (POST)
+  const method = currentGridId ? 'PUT' : 'POST';
+  const url = currentGridId ? `./api/grids/${currentGridId}` : './api/grids';
 
-  if (isCreatingNewGrid) {
-    currentGridId = null;
-  } else {
-    if (currentGridId) {
-      try {
+  try {
+    if (typeof showApiLoader === 'function') {
+      showApiLoader();
+    }
 
-        showApiLoader()
+    const response = await fetch(url, {
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        name: currentGridName,
+        cols: COLS,
+        rows: ROWS,
+        version: 2,
+        content: cells
+      })
+    });
 
-        const response = await fetch(`./api/grids/${currentGridId}`, { 
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            name: currentGridName,
-            cols: COLS,
-            rows: ROWS,
-            content: cells
-          })
-        });
-        const data = await response.json();
+    const data = await response.json();
 
-        hideApiLoader()
+    if (typeof hideApiLoader === 'function') {
+      hideApiLoader();
+    }
 
-        if (!data.success) {
-          console.error("Erreur lors de la mise à jour des paramètres :", data.error);
-          alert("Erreur lors de l'enregistrement des paramètres dans le cloud.");
-        }
-      } catch (err) {
-        console.error("Erreur réseau :", err);
-        alert("Impossible de contacter le serveur pour mettre à jour les paramètres.");
+    if (data.success) {
+      if (data.id) {
+        currentGridId = data.id; // Sauvegarde du nouvel ID si c'était une création (POST)
       }
     } else {
-      saveGridToCloud({ version: 2, cols: COLS, rows: ROWS, cells: cells });
+      const errorMsg = "Erreur lors de l'enregistrement des paramètres : " + (data.error || "Erreur inconnue");
+      if (typeof showCustomAlert === 'function') {
+        showCustomAlert(errorMsg);
+      } else {
+        alert(errorMsg);
+      }
+      return; // On ne ferme pas la modale en cas d'erreur serveur
     }
+  } catch (err) {
+    console.error("Erreur réseau :", err);
+    if (typeof hideApiLoader === 'function') {
+      hideApiLoader();
+    }
+    if (typeof showCustomAlert === 'function') {
+      showCustomAlert("Impossible de contacter le serveur.");
+    } else {
+      alert("Impossible de contacter le serveur.");
+    }
+    return;
   }
 
-  updateGridDisplay();
-  closeSettingsModal();
+  // 5. Actualiser l'affichage et fermer la fenêtre de configuration si tout est OK
+  if (typeof updateGridDisplay === 'function') {
+    updateGridDisplay();
+  }
+  if (typeof closeSettingsModal === 'function') {
+    closeSettingsModal();
+  }
 }
 
 function openSaveModal(isSaveAs) {
@@ -1725,7 +1792,7 @@ async function confirmSave(destination) {
   if (isSaveAsMode) {
     const newName = document.getElementById("saveAsNameInput").value.trim();
     if (!newName) {
-      alert("Veuillez entrer un nom valide.");
+      showCustomAlert("Veuillez entrer un nom valide.");
       return;
     }
     targetName = newName;
@@ -1736,7 +1803,7 @@ async function confirmSave(destination) {
     const savedGrids = await getSavedGrids();
 
     if (savedGrids.hasOwnProperty(targetName) && (isSaveAsMode || targetName !== currentGridName)) {
-      const overwrite = confirm(`Une grille portant le nom "${targetName}" existe déjà dans le cloud. Voulez-vous l'écraser ?`);
+      const overwrite = await showCustomConfirm(`Une grille portant le nom "${targetName}" existe déjà dans le cloud. Voulez-vous l'écraser ?`);
       if (!overwrite) {
         return;
       }
@@ -1819,12 +1886,12 @@ async function openLoadModal() {
   modal.classList.add("active");
 }
 
-function closeLoadModal() { 
-  document.getElementById("loadModal").classList.remove("active"); 
+function closeLoadModal() {
+  document.getElementById("loadModal").classList.remove("active");
 }
 
-function closeLoadModalOnOverlay(event) { 
-  if (event.target.id === "loadModal") closeLoadModal(); 
+function closeLoadModalOnOverlay(event) {
+  if (event.target.id === "loadModal") closeLoadModal();
 }
 
 function closeClearModal() {
@@ -1889,16 +1956,16 @@ function closeUserModalOnOverlay(event) {
   if (event.target.id === "userModal") closeUserModal();
 }
 
-function openHelpModal() { 
-  document.getElementById("helpModal").classList.add("active"); 
+function openHelpModal() {
+  document.getElementById("helpModal").classList.add("active");
 }
 
-function closeHelpModal() { 
-  document.getElementById("helpModal").classList.remove("active"); 
+function closeHelpModal() {
+  document.getElementById("helpModal").classList.remove("active");
 }
 
-function closeHelpModalOnOverlay(event) { 
-  if (event.target.id === "helpModal") closeHelpModal(); 
+function closeHelpModalOnOverlay(event) {
+  if (event.target.id === "helpModal") closeHelpModal();
 }
 
 function closeRestoreModal() {
@@ -1948,4 +2015,108 @@ function showApiLoader() {
 function hideApiLoader() {
   const loader = document.getElementById("apiLoader");
   if (loader) loader.classList.remove("active");
+}
+
+function showCustomAlert(message) {
+  let alertModal = document.getElementById('customAlertModal');
+
+  if (!alertModal) {
+    alertModal = document.createElement('div');
+    alertModal.id = 'customAlertModal';
+    alertModal.className = 'modal-overlay';
+
+    // Ajout d'un style propre directement sur la structure ou via vos classes CSS
+    alertModal.innerHTML = `
+      <div class="modal-card" style="padding: 24px; display: flex; flex-direction: column; gap: 16px; min-width: 320px; max-width: 400px; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+        <h3 style="margin: 0; font-size: 1.25rem; font-weight: 600; color: #1a1a1a;">Information</h3>
+        <p id="customAlertMessage" style="margin: 0; font-size: 0.95rem; color: #4a4a4a; line-height: 1.5;"></p>
+        <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+          <button type="button" class="btn-primary" onclick="closeCustomAlert()" style="padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; width: 100%;">OK</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(alertModal);
+  }
+
+  document.getElementById('customAlertMessage').textContent = message;
+  alertModal.style.display = 'flex';
+  alertModal.style.justifyContent = 'center';
+  alertModal.style.alignItems = 'center';
+  alertModal.style.position = 'fixed';
+  alertModal.style.top = '0';
+  alertModal.style.left = '0';
+  alertModal.style.width = '100%';
+  alertModal.style.height = '100%';
+  alertModal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+  alertModal.style.zIndex = '9999';
+}
+
+function closeCustomAlert() {
+  const alertModal = document.getElementById('customAlertModal');
+  if (alertModal) {
+    alertModal.style.display = 'none';
+  }
+}
+
+function showCustomConfirm(message) {
+  return new Promise((resolve) => {
+    let confirmModal = document.getElementById('customConfirmModal');
+
+    if (!confirmModal) {
+      confirmModal = document.createElement('div');
+      confirmModal.id = 'customConfirmModal';
+      confirmModal.className = 'modal-overlay';
+
+      confirmModal.innerHTML = `
+        <div class="modal-card" style="padding: 24px; display: flex; flex-direction: column; gap: 16px; min-width: 320px; max-width: 400px; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+          <h3 style="margin: 0; font-size: 1.25rem; font-weight: 600; color: #1a1a1a;">Confirmation</h3>
+          <p id="customConfirmMessage" style="margin: 0; font-size: 0.95rem; color: #4a4a4a; line-height: 1.5;"></p>
+          <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px;">
+            <button type="button" id="customConfirmCancelBtn" style="padding: 10px 20px; background: #e5e7eb; color: #374151; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; transition: background-color 0.2s ease;">Annuler</button>
+            <button type="button" id="customConfirmOkBtn" style="padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; transition: background-color 0.2s ease;">Confirmer</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(confirmModal);
+    }
+
+    document.getElementById('customConfirmMessage').textContent = message;
+
+    const okBtn = document.getElementById('customConfirmOkBtn');
+    const cancelBtn = document.getElementById('customConfirmCancelBtn');
+
+    const newOkBtn = okBtn.cloneNode(true);
+    const newCancelBtn = cancelBtn.cloneNode(true);
+    okBtn.parentNode.replaceChild(newOkBtn, okBtn);
+    cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+    // Gestion des effets de survol (Hover)
+    newCancelBtn.addEventListener('mouseenter', () => newCancelBtn.style.backgroundColor = '#d1d5db');
+    newCancelBtn.addEventListener('mouseleave', () => newCancelBtn.style.backgroundColor = '#e5e7eb');
+
+    newOkBtn.addEventListener('mouseenter', () => newOkBtn.style.backgroundColor = '#1d4ed8');
+    newOkBtn.addEventListener('mouseleave', () => newOkBtn.style.backgroundColor = '#2563eb');
+
+    newOkBtn.addEventListener('click', () => {
+      closeCustomConfirm();
+      resolve(true);
+    });
+
+    newCancelBtn.addEventListener('click', () => {
+      closeCustomConfirm();
+      resolve(false);
+    });
+
+    requestAnimationFrame(() => {
+      confirmModal.classList.add('active');
+    });
+  });
+}
+
+function closeCustomConfirm() {
+  const confirmModal = document.getElementById('customConfirmModal');
+  if (confirmModal) {
+    // Retire la classe pour lancer l'animation de disparition
+    confirmModal.classList.remove('active');
+  }
 }
