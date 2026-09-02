@@ -26,6 +26,31 @@
     flex-direction: column !important;
   }
 
+  /* --- Logo mobile -------------------------------------------------------
+     Le bandeau horizontal est remplacé par le logo carré pour libérer de
+     l'espace dans l'en-tête sur les petits écrans. */
+  .header-logo {
+    content: url("./media/logo.svg");
+    width: 40px !important;
+    height: 40px !important;
+    object-fit: contain;
+  }
+
+  /* --- Nom de l'application centré dans le header ------------------------ */
+  .header-title-logo {
+    display: block !important;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: min(48vw, 220px);
+    height: auto;
+    max-height: 32px;
+    object-fit: contain;
+    filter: invert(1);
+    pointer-events: none;
+  }
+
   /* --- Header sur une seule ligne : burger à gauche, logo à droite ------- */
   header {
     flex-shrink: 0;
@@ -37,6 +62,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 10px;
+    max-height: 50px;
   }
 
   /* Le burger passe avant le logo visuellement (via `order`), quel que soit
