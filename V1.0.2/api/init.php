@@ -3,14 +3,29 @@
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
-// ... le reste de votre code de configuration et session_start()
-// api/config.php
+// Charger le fichier de configuration JSON
+$configFile = __DIR__ . '/config.json';
+if (!file_exists($configFile)) {
+    http_response_code(500);
+    echo json_encode([
+        'success' => false, 
+        'error' => 'Fichier de configuration introuvable.'
+    ]);
+    exit;
+}
 
-// 1. Gestion des CORS avec un tableau d'origines autorisées
-$allowed_origins = [
-    "http://127.0.0.1:5500",
-    "http://localhost:5500"
-];
+$configData = json_decode(file_get_contents($configFile), true);
+if (json_last_error() !== JSON_ERROR_NONE) {
+    http_response_code(500);
+    echo json_encode([
+        'success' => false, 
+        'error' => 'Erreur de syntaxe dans le fichier de configuration JSON.'
+    ]);
+    exit;
+}
+
+// 1. Gestion des CORS avec le tableau extrait du JSON
+$allowed_origins = $configData['allowed_origins'] ?? [];
 
 if (isset($_SERVER['HTTP_ORIGIN']) && in_array($_SERVER['HTTP_ORIGIN'], $allowed_origins)) {
     header("Access-Control-Allow-Origin: " . $_SERVER['HTTP_ORIGIN']);
@@ -28,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 // 2. Format de réponse par défaut en JSON
 header('Content-Type: application/json');
 
-// 3. Affichage des erreurs pour le débogage
+// 3. Affichage des erreurs pour le débogage (si souhaité)
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -38,11 +53,12 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// 5. Connexion à la base de données
-$host = 'sql109.infinityfree.com';
-$db   = 'if0_42802462_verbicruciste';
-$user = 'if0_42802462';
-$pass = 'hNnPCNLKzrVW7sh';
+// 5. Connexion à la base de données via les variables du JSON
+$dbConfig = $configData['db'] ?? [];
+$host = $dbConfig['host'] ?? '';
+$db   = $dbConfig['name'] ?? '';
+$user = $dbConfig['user'] ?? '';
+$pass = $dbConfig['pass'] ?? '';
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass, [

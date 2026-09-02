@@ -1,0 +1,331 @@
+/* ==========================================================================
+   Styles spécifiques aux appareils mobiles.
+
+   Ce fichier est importé depuis style.css via `@import`. La spécification
+   CSS impose que `@import` soit placé avant toute autre règle : ses styles
+   se retrouvent donc tout en haut de la cascade, avant les règles "desktop"
+   déclarées plus bas dans style.css. Pour les sélecteurs qui partagent
+   exactement la même spécificité que leur équivalent desktop (ex: `header`,
+   `body`, `.app`, `.editor`), on utilise donc `!important` afin de garantir
+   que ces règles mobiles l'emportent bien lorsque le media query est actif.
+   Les sélecteurs plus spécifiques (ex: `.main-section.mobile-open`)
+   l'emportent naturellement et n'en ont pas besoin.
+   ========================================================================== */
+
+@media (max-width: 1100px) {
+
+  /* Verrouille le fond pour empêcher le scroll global de la page mobile */
+/* Bloque le scroll global de la page sur mobile */
+html, body {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+/* Force l'application à rester calée sur la hauteur de l'écran */
+.app {
+  height: 100svh;
+  max-height: 100svh;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Ancre solidement le header pour qu'il ne remonte jamais */
+header {
+  position: relative;
+  flex-shrink: 0;
+}
+
+  /* --- App plein écran, sans défilement de la page ---------------------- */
+  html,
+  body {
+    height: 100%;
+    overflow: hidden !important;
+  }
+
+  /* Empêche les comportements tactiles par défaut (zoom, double-tap pour zoomer) sur l'UI globale */
+  body,
+  header,
+  .modal,
+  aside {
+    touch-action: manipulation;
+    /* Autorise le clic/scroll simple mais bloque les zooms natifs indésirables */
+  }
+
+  #authModal input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  aside input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  body {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  /* --- Logo mobile -------------------------------------------------------
+     Le bandeau horizontal est remplacé par le logo carré pour libérer de
+     l'espace dans l'en-tête sur les petits écrans. */
+  .header-logo {
+    content: url("./media/logo.svg");
+    width: 40px !important;
+    height: 40px !important;
+    object-fit: contain;
+  }
+
+  /* --- Nom de l'application centré dans le header ------------------------ */
+  .header-title-logo {
+    display: block !important;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: min(48vw, 220px);
+    height: auto;
+    max-height: 32px;
+    object-fit: contain;
+    filter: invert(1);
+    pointer-events: none;
+  }
+
+  /* --- Header sur une seule ligne : burger à gauche, logo à droite ------- */
+  header {
+    flex-shrink: 0;
+    position: sticky !important;
+    top: 0;
+    z-index: 850;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    max-height: 50px;
+  }
+
+  /* Le burger passe avant le logo visuellement (via `order`), quel que soit
+     l'ordre réel des éléments dans le DOM. */
+  .burger-btn {
+    display: flex !important;
+    order: 1;
+  }
+
+  .header-left {
+    order: 2;
+  }
+
+  /* La toolbar n'apparaît plus directement dans le header : elle devient un
+     tiroir plein écran ouvert/fermé par le bouton burger (voir plus bas). Le
+     conteneur intermédiaire ne doit donc plus réserver de place dans la
+     ligne du header. */
+  .topbar-container {
+    display: contents !important;
+  }
+
+  /* Colonne vide (3ᵉ colonne de la grille CSS desktop) : inutile sur mobile. */
+  header>div:empty {
+    display: none !important;
+  }
+
+  /* --- Toolbar = tiroir latéral ouvert depuis la gauche ------------------ */
+  .topbar {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(80vw, 300px);
+    max-width: 300px;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 4px !important;
+    padding: 16px 12px !important;
+    padding-top: max(16px, env(safe-area-inset-top)) !important;
+    border-radius: 0 12px 12px 0 !important;
+    overflow-y: auto;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    z-index: 1000;
+  }
+
+  .topbar.mobile-menu-open {
+    transform: translateX(0);
+  }
+
+  .topbar-separator {
+    width: 100% !important;
+    height: 1px !important;
+    margin: 8px 0 !important;
+  }
+
+  /* Boutons de la toolbar affichés en tiroir : icône + libellé (issu de
+     `data-tooltip`), alignés en colonne, pleine largeur, adaptés au tactile. */
+  .topbar .icon-btn {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 12px 10px;
+    border-radius: 8px;
+  }
+
+  /* Dans le tiroir, le libellé (issu de `data-tooltip`) doit être affiché en
+     permanence à côté de l'icône plutôt qu'en bulle au survol (inadapté au
+     tactile) : on neutralise donc entièrement le style "tooltip" hérité de
+     `[data-tooltip]::before/::after` pour n'en garder que le texte. */
+  .topbar .icon-btn::before {
+    content: none;
+  }
+
+  .topbar .icon-btn::after {
+    content: attr(data-tooltip);
+    position: static;
+    opacity: 1;
+    transform: none;
+    background: none;
+    box-shadow: none;
+    border: none;
+    padding: 0;
+    color: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .topbar .icon-btn:hover,
+  .topbar .icon-btn:active {
+    background: #444;
+  }
+
+  #userMenuContainer {
+    width: 100%;
+  }
+
+  .mobile-menu-backdrop.active {
+    display: block !important;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 849;
+  }
+
+  /* --- Barre de navigation Sélection / Grille / Mots --------------------- */
+  .mobile-section-nav {
+    display: flex !important;
+    flex-shrink: 0;
+    background: #f5f5f5;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .mobile-nav-btn {
+        /* display: flex !important; */
+        /* flex-direction: column; */
+        align-items: center;
+        /* justify-content: center; */
+        /* gap: 2px; */
+        /* flex: 1 1 0; */
+        /* max-width: 140px; */
+        min-height: 44px;
+        /* border: solid 1px black !important; */
+        padding: 6px 4px;
+        font-size: 11px;
+        font-weight: 600;
+        /* box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12); */
+        width: 100%;
+    }
+
+  .mobile-nav-btn .material-symbols-outlined {
+    font-size: 20px;
+  }
+
+  /* --- L'éditeur occupe tout l'espace restant, sans marge ---------------- */
+  .app {
+    flex: 1 1 auto !important;
+    min-height: 0;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 10px !important;
+    gap: 0 !important;
+    overflow: hidden !important;
+  }
+
+  main {
+    height: auto !important;
+  }
+
+  #openKeyboardBtn {
+    display: inline-flex;
+  }
+
+  .editor {
+    flex: 1 1 auto !important;
+    min-height: 0;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+    border-radius: 5px !important;
+  }
+
+  /* --- Boutons flottants de zoom : marge de sécurité par rapport aux bords
+     de l'écran (y compris zones d'encoche / barres système). --------------- */
+  .zoom-badge {
+    bottom: max(16px, env(safe-area-inset-bottom)) !important;
+    right: max(16px, env(safe-area-inset-right)) !important;
+  }
+
+  /* --- Panneaux latéraux (aside) : ne génèrent plus leur propre boîte, afin
+     que chaque `.main-section` qu'ils contiennent puisse être ouverte
+     individuellement, indépendamment des autres. ------------------------- */
+  aside,
+  .inner-aside {
+    display: contents !important;
+  }
+
+  /* Chaque section (Sélection / Grille / Mots) est un modal indépendant :
+     masquée par défaut, affichée en superposition plein écran (avec une
+     petite marge) uniquement lorsqu'elle porte la classe `.mobile-open`. */
+  .main-section {
+    display: none !important;
+  }
+
+  .main-section.mobile-open {
+    display: flex !important;
+    flex-direction: column;
+    position: fixed !important;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    width: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+    z-index: 960;
+    border-radius: 14px !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35) !important;
+    overflow-y: auto !important;
+  }
+
+  .main-section .aside-close-btn {
+    display: flex !important;
+    align-self: flex-end;
+    flex-shrink: 0;
+    margin-bottom: 4px;
+  }
+
+  .mobile-section-backdrop.active {
+    display: block !important;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 849;
+  }
+}
