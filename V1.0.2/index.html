@@ -7,6 +7,36 @@
   <title>Créateur de mots fléchés</title>
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <!-- Standard Favicons -->
+  <link rel="icon" type="image/png" sizes="32x32" href="./media/favicons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="./media/favicons/favicon-16x16.png">
+  <link rel="shortcut icon" href="./media/favicons/favicon.ico">
+
+  <!-- Apple Touch Icons -->
+  <link rel="apple-touch-icon" sizes="180x180" href="./media/favicons/apple-touch-icon-180x180.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="./media/favicons/apple-touch-icon-152x152.png">
+  <link rel="apple-touch-icon" sizes="120x120" href="./media/favicons/apple-touch-icon-120x120.png">
+  <link rel="apple-touch-icon" sizes="76x76" href="./media/favicons/apple-touch-icon-76x76.png">
+  <link rel="apple-touch-icon" sizes="60x60" href="./media/favicons/apple-touch-icon-60x60.png">
+
+  <!-- Android & PWA Icons -->
+  <link rel="icon" type="image/png" sizes="192x192" href="./media/favicons/android-chrome-192x192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="./media/favicons/android-chrome-512x512.png">
+  <link rel="manifest" href="./media/favicons/site.webmanifest">
+
+  <!-- Microsoft Tiles -->
+  <meta name="msapplication-TileImage" content="/media/favicons/mstile-150x150.png">
+  <meta name="msapplication-TileColor" content="#da532c">
+  <meta name="msapplication-config" content="/media/favicons/browserconfig.xml">
+
+  <!-- Additional Meta Tags -->
+  <meta name="theme-color" content="#000000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="VerbiCruciste">
+  <meta name="application-name" content="VerbiCruciste">
+
+  <!-- Lien vers votre feuille de style CSS principale -->
   <link rel="stylesheet" href="./style.css" />
 
 
@@ -255,10 +285,16 @@
       </div>
     </aside>
     <main class="editor">
-      <img src="./madia/banner.svg" alt="Logo" class="print-banner" />
+      <img src="./media/banner.svg" alt="Logo" class="print-banner" />
       <div id="printTitle" class="print-title">Ma Grille</div>
       <div id="grid" class="grid"></div>
       <div class="zoom-controls-wrapper">
+
+        <!-- Nouveau bouton pour ouvrir le clavier sur mobile -->
+        <button class="zoom-btn" id="openKeyboardBtn" style="display: none;" data-tooltip="Éditer la case"
+          onclick="requestKeyboardInput()">
+          <span class="material-symbols-outlined">keyboard</span>
+        </button>
         <!-- Bouton de réinitialisation à gauche -->
         <button class="zoom-btn  reset-zoom" id="zoomResetBtn" onclick="resetZoom()" data-tooltip="Zoom initial">
           <span class="material-symbols-outlined">restart_alt</span>
@@ -266,11 +302,11 @@
 
         <!-- Badge de zoom habituel (sans le bouton reset à l'intérieur) -->
         <div class="zoom-badge">
-          <button class="zoom-btn" id="zoomInBtn" data-tooltip="Zoom avant">
+          <button class="zoom-btn" id="zoomInBtn" data-tooltip="Zoom avant" onclick="zoomIn()">
             <span class="material-symbols-outlined">zoom_in</span>
           </button>
           <span class="zoom-level" id="zoomLevelDisplay">80%</span>
-          <button class="zoom-btn" id="zoomOutBtn" data-tooltip="Zoom arrière">
+          <button class="zoom-btn" id="zoomOutBtn" data-tooltip="Zoom arrière" onclick="zoomOut()">
             <span class="material-symbols-outlined">zoom_out</span>
           </button>
         </div>

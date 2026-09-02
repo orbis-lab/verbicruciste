@@ -1,6 +1,3 @@
-
-
-
 let currentGridId = null; // ID de la grille active dans la base de données
 let COLS = 13;
 let ROWS = 17;
@@ -36,6 +33,7 @@ window.init = async function () {
   const startTime = Date.now();
 
   applyStoredTheme();
+  checkUserSession();
 
   cells = Array.from({ length: COLS * ROWS }, emptyCell);
 
@@ -45,7 +43,6 @@ window.init = async function () {
   // l'utilisateur choisisse de la restaurer ou non, pour ne pas l'écraser
   // avec la grille vierge fraîchement créée ci-dessus.
   checkPreviousSession();
-  updateThemeMenuUI();
 
   updateGridDisplay();
 
@@ -72,15 +69,6 @@ window.init = async function () {
   // garantit une échelle d'impression toujours indépendante du zoom/
   // déplacement appliqués à l'écran, sans avoir besoin de manipuler `scale`,
   // `pointX`/`pointY` ni le `transform` inline en JavaScript.
-
-  // --- Fermeture du menu de sélection du thème au clic en dehors ---
-  document.addEventListener('click', (event) => {
-    const wrapper = document.querySelector('.theme-selector-wrapper');
-    const menu = document.getElementById('themeMenu');
-    if (wrapper && menu && menu.classList.contains('active') && !wrapper.contains(event.target)) {
-      menu.classList.remove('active');
-    }
-  });
 
   // --- Menu burger mobile : refermé automatiquement dès qu'une action de la
   // toolbar est déclenchée (chaque bouton ouvre de toute façon son propre
@@ -127,45 +115,6 @@ function initPanAndZoomGrid() {
 
   // On délègue le centrage géométrique à une fonction externe réutilisable
   updateGridGeometry();
-
-  // --- GESTION DES BOUTONS DU BADGE DE ZOOM ---
-  const zoomInBtn = document.getElementById('zoomInBtn');
-  const zoomOutBtn = document.getElementById('zoomOutBtn');
-
-  if (zoomInBtn && zoomOutBtn) {
-    const newZoomIn = zoomInBtn.cloneNode(true);
-    const newZoomOut = zoomOutBtn.cloneNode(true);
-    zoomInBtn.parentNode.replaceChild(newZoomIn, zoomInBtn);
-    zoomOutBtn.parentNode.replaceChild(newZoomOut, zoomOutBtn);
-
-    newZoomIn.addEventListener('click', () => {
-      const prevScale = scale;
-      scale = Math.min(scale + 0.15, 2.5);
-
-      const rect = editorContainer.getBoundingClientRect();
-      const centerX = rect.width / 2;
-      const centerY = rect.height / 2;
-
-      pointX = centerX - (centerX - pointX) * (scale / prevScale);
-      pointY = centerY - (centerY - pointY) * (scale / prevScale);
-
-      if (setTransform) setTransform();
-    });
-
-    newZoomOut.addEventListener('click', () => {
-      const prevScale = scale;
-      scale = Math.max(scale - 0.15, 0.4);
-
-      const rect = editorContainer.getBoundingClientRect();
-      const centerX = rect.width / 2;
-      const centerY = rect.height / 2;
-
-      pointX = centerX - (centerX - pointX) * (scale / prevScale);
-      pointY = centerY - (centerY - pointY) * (scale / prevScale);
-
-      if (setTransform) setTransform();
-    });
-  }
 
   // --- GESTION DU ZOOM À LA MOLETTE (PC) ---
   editorContainer.addEventListener('wheel', (event) => {
@@ -451,8 +400,23 @@ function render() {
 
     if (cell.type === "letter") {
       const input = document.createElement("input");
-      input.maxLength = 1; input.value = cell.letter; input.setAttribute("autocomplete", "off");
-      input.addEventListener("focus", () => selectCellSilently(index));
+      input.maxLength = 1;
+      input.value = cell.letter || "";
+      input.setAttribute("autocomplete", "off");
+      input.readOnly = true; // Reste en lecture seule pour bloquer le clavier au toucher direct de la case
+
+      // Au clic direct sur la case, on sélectionne et on affiche le bouton, PAS de clavier
+      input.addEventListener("click", (e) => {
+        e.preventDefault();
+        selectCellSilently(index);
+        showKeyboardPromptButton(true);
+      });
+
+      input.addEventListener("focus", () => {
+        selectCellSilently(index);
+        showKeyboardPromptButton(true);
+      });
+
       input.addEventListener("keydown", e => {
         if (e.key === "ArrowDown") { currentInputDir = "S"; moveToNextLetter(1); return; }
         else if (e.key === "ArrowRight") { currentInputDir = "E"; moveToNextLetter(1); return; }
@@ -472,8 +436,14 @@ function render() {
 
     if (cell.type === "definition") {
       const editable = document.createElement("div");
-      editable.className = "def-content"; editable.contentEditable = "true"; editable.innerText = cell.definition;
-      editable.addEventListener("focus", () => { currentInputDir = cell.arrow; selectCellSilently(index); });
+      editable.className = "def-content";
+      editable.contentEditable = "true";
+      editable.innerText = cell.definition;
+      editable.addEventListener("focus", () => {
+        currentInputDir = cell.arrow;
+        selectCellSilently(index);
+        showKeyboardPromptButton(false); // Masque le bouton lettre si on édite une définition
+      });
       editable.addEventListener("input", e => { cell.definition = e.target.innerText.toUpperCase(); const sideInput = document.getElementById("definitionInput"); if (sideInput) sideInput.value = cell.definition; persistSession(); });
       el.appendChild(editable);
       const svg = createArrowSVG(cell.arrow, "full");
@@ -485,8 +455,8 @@ function render() {
       const halves = el.querySelectorAll(".half"); const editables = el.querySelectorAll(".def-editable");
       editables[0].innerText = cell.top.definition; editables[1].innerText = cell.bottom.definition;
 
-      editables[0].addEventListener("focus", () => { currentInputDir = "E"; selectCellSilently(index); const sideInput = document.getElementById("topDefinitionInput"); if (sideInput) sideInput.value = cell.top.definition; });
-      editables[1].addEventListener("focus", () => { currentInputDir = "S"; selectCellSilently(index); const sideInput = document.getElementById("bottomDefinitionInput"); if (sideInput) sideInput.value = cell.bottom.definition; });
+      editables[0].addEventListener("focus", () => { currentInputDir = "E"; selectCellSilently(index); showKeyboardPromptButton(false); const sideInput = document.getElementById("topDefinitionInput"); if (sideInput) sideInput.value = cell.top.definition; });
+      editables[1].addEventListener("focus", () => { currentInputDir = "S"; selectCellSilently(index); showKeyboardPromptButton(false); const sideInput = document.getElementById("bottomDefinitionInput"); if (sideInput) sideInput.value = cell.bottom.definition; });
 
       editables[0].addEventListener("input", e => { cell.top.definition = e.target.innerText.toUpperCase(); const sideInput = document.getElementById("topDefinitionInput"); if (sideInput) sideInput.value = cell.top.definition; persistSession(); });
       editables[1].addEventListener("input", e => { cell.bottom.definition = e.target.innerText.toUpperCase(); const sideInput = document.getElementById("bottomDefinitionInput"); if (sideInput) sideInput.value = cell.bottom.definition; persistSession(); });
@@ -496,11 +466,17 @@ function render() {
     }
 
     el.dataset.index = index;
-    el.addEventListener("click", () => { if (cell.type !== "double" && cell.type !== "definition" && cell.type !== "letter") selectCell(index); });
+    el.addEventListener("click", () => {
+      if (cell.type !== "double" && cell.type !== "definition" && cell.type !== "letter") {
+        selectCell(index);
+        showKeyboardPromptButton(false);
+      }
+    });
     grid.appendChild(el);
   });
 
-  updatePanel(); updatePlacedWordsList();
+  updatePanel();
+  updatePlacedWordsList();
   persistSession();
 }
 
@@ -1408,39 +1384,39 @@ function toggleThemeMenu(event) {
 }
 
 async function applyStoredTheme() {
-    try {
-        const response = await fetch('api/get_user_preferences.php', {
-            credentials: 'include' 
-        });
-        
-        if (!response.ok) {
-            console.error('Erreur HTTP :', response.status);
-            return;
-        }
+  try {
+    const response = await fetch('api/get_user_preferences.php', {
+      credentials: 'include'
+    });
 
-        const data = await response.json();
-        if (data.success) {
-            // On applique l'attribut ET la classe pour être compatible avec votre CSS actuel
-            document.documentElement.setAttribute('data-theme', data.theme);
-            document.documentElement.classList.toggle("dark-theme", data.theme === "dark");
-        }
-    } catch (error) {
-        console.error('Erreur réseau :', error);
+    if (!response.ok) {
+      console.error('Erreur HTTP :', response.status);
+      return;
     }
+
+    const data = await response.json();
+    if (data.success) {
+      // On applique l'attribut ET la classe pour être compatible avec votre CSS actuel
+      document.documentElement.setAttribute('data-theme', data.theme);
+      document.documentElement.classList.toggle("dark-theme", data.theme === "dark");
+    }
+  } catch (error) {
+    console.error('Erreur réseau :', error);
+  }
 }
 
 function setTheme(theme) {
   // 1. On met à jour l'attribut HTML (pour l'état global)
   document.documentElement.setAttribute('data-theme', theme);
-  
+
   // 2. On ajoute/retire la classe CSS (pour que vos styles CSS s'activent immédiatement)
   document.documentElement.classList.toggle("dark-theme", theme === "dark");
-  
- 
+
+
   updateThemeMenuUI();
   const menu = document.getElementById("themeMenu");
   if (menu) menu.classList.remove("active");
-  
+
   changeUserTheme(theme);
 }
 
@@ -1655,37 +1631,6 @@ async function checkUserSession() {
   }
 }
 
-
-
-// Événements d'interface au chargement du DOM
-document.addEventListener('DOMContentLoaded', () => {
-  checkUserSession();
-
-  // Gestion du menu déroulant utilisateur dans la toolbar
-  const userMenuBtn = document.getElementById('userMenuBtn');
-  const userDropdown = document.getElementById('userDropdown');
-  const btnLogout = document.getElementById('btnLogout');
-
-  if (userMenuBtn) {
-    userMenuBtn.addEventListener('click', () => {
-      userDropdown.style.display = userDropdown.style.display === 'block' ? 'none' : 'block';
-    });
-  }
-
-  if (btnLogout) {
-    btnLogout.addEventListener('click', handleLogout);
-  }
-
-  // Fermer le menu si l'on clique ailleurs
-  window.addEventListener('click', (e) => {
-    if (!e.target.closest('#userMenuContainer')) {
-      if (userDropdown) userDropdown.style.display = 'none';
-    }
-  });
-});
-
-
-// Fonction pour sauvegarder la grille dans le cloud via save_grid.php
 
 
 // Remplace le localStorage par un appel à l'API load_grids.php
@@ -1929,31 +1874,99 @@ function resetZoom() {
   }
 }
 
+// Zoom avant / zoom arrière (boutons du badge de zoom), en conservant le
+// centre visuel actuel de la zone d'édition.
+function zoomStep(delta) {
+  const editorContainer = document.querySelector('.editor');
+  if (!editorContainer) return;
+
+  const prevScale = scale;
+  scale = delta > 0 ? Math.min(scale + delta, 2.5) : Math.max(scale + delta, 0.4);
+
+  const rect = editorContainer.getBoundingClientRect();
+  const centerX = rect.width / 2;
+  const centerY = rect.height / 2;
+
+  pointX = centerX - (centerX - pointX) * (scale / prevScale);
+  pointY = centerY - (centerY - pointY) * (scale / prevScale);
+
+  if (setTransform) setTransform();
+}
+
+function zoomIn() { zoomStep(0.15); }
+function zoomOut() { zoomStep(-0.15); }
+
 
 
 // Optionnel : Fonction pour sauvegarder le changement de thème
 async function changeUserTheme(newTheme) {
-    try {
-        const response = await fetch('api/update_user_preferences.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ theme: newTheme }),
-            credentials: 'include' // Indispensable ici aussi
-        });
+  try {
+    const response = await fetch('api/update_user_preferences.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ theme: newTheme }),
+      credentials: 'include' // Indispensable ici aussi
+    });
 
-        if (!response.ok) {
-            console.error('Erreur HTTP :', response.status);
-            return;
-        }
-
-        const data = await response.json();
-        
-        if (data.success) {
-            document.documentElement.setAttribute('data-theme', data.theme);
-        } else {
-            console.warn('Impossible de sauvegarder le thème :', data.error);
-        }
-    } catch (error) {
-        console.error('Erreur lors de la mise à jour du thème :', error);
+    if (!response.ok) {
+      console.error('Erreur HTTP :', response.status);
+      return;
     }
+
+    const data = await response.json();
+
+    if (data.success) {
+      document.documentElement.setAttribute('data-theme', data.theme);
+    } else {
+      console.warn('Impossible de sauvegarder le thème :', data.error);
+    }
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour du thème :', error);
+  }
+}
+
+function showKeyboardPromptButton(show) {
+  const kbBtn = document.getElementById('openKeyboardBtn');
+  if (kbBtn) {
+    // N'affiche le bouton que si c'est une case lettre sélectionnée
+    if (show && selected !== null && cells[selected].type === "letter") {
+      kbBtn.style.display = "inline-flex";
+    } else {
+      kbBtn.style.display = "none";
+    }
+  }
+}
+
+function requestKeyboardInput() {
+  if (selected === null || cells[selected].type !== "letter") return;
+
+  const grid = document.getElementById("grid");
+  const el = grid.children[selected];
+  if (el) {
+    const input = el.querySelector("input");
+    if (input) {
+      // Sur iOS (notamment iPhone 11), la case était déjà sélectionnée -
+      // et donc déjà focus() - au moment du tap précédent sur la case,
+      // pendant qu'elle était encore en lecture seule. Si on se contente de
+      // retirer le readOnly et de rappeler focus() sur un input déjà actif,
+      // Safari ne redéclenche aucun évènement de focus et n'ouvre donc pas
+      // le clavier. On force donc explicitement une perte de focus AVANT de
+      // repasser l'input en écriture, afin que le focus() qui suit soit
+      // bien considéré comme un nouveau focus - tout en restant strictement
+      // synchrone, dans la continuité du geste utilisateur (tap sur ce
+      // bouton), condition requise par iOS pour autoriser l'ouverture du
+      // clavier.
+      input.blur();
+      input.readOnly = false;
+      input.focus();
+      input.select();
+
+      // Remet le readOnly à la perte du focus
+      const handleBlur = () => {
+        input.readOnly = true;
+        input.removeEventListener('blur', handleBlur);
+      };
+      input.addEventListener('blur', handleBlur, { once: true });
+    }
+  }
 }

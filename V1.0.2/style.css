@@ -535,29 +535,64 @@
       margin-bottom: 10px;
       padding-bottom: 10px;
   }
+@media (min-width: 1100px) {
+    #openKeyboardBtn {
+        display: none !important;
+    }
+}
 
-  .zoom-controls-wrapper {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      /* Ajustez l'espace entre le bouton reset et le badge */
-      position: absolute;
-      bottom: 20px;
-      right: 20px;
-      z-index: 50;
-  }
+.zoom-controls-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    z-index: 50;
+}
 
-   .zoom-controls-wrapper .reset-zoom{
-      height: 100%;
-      background: white;
+/* Style commun ("pilule" vitrée) partagé par tous les contrôles du
+   zoom-controls-wrapper (bouton clavier, bouton reset, badge zoom in/out)
+   pour un rendu visuel cohérent entre eux. */
+.zoom-controls-wrapper .zoom-badge,
+.zoom-controls-wrapper .reset-zoom,
+.zoom-controls-wrapper #openKeyboardBtn {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     border: 1px solid #ddd;
-    border-radius: 7px;
-    padding: 4px 6px;
-    height: stretch;
-    width: 40px;
-    margin-right: 10px;
-  }
+    border-radius: 50px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
 
+.zoom-controls-wrapper .reset-zoom,
+.zoom-controls-wrapper #openKeyboardBtn {
+    width: 40px;
+    height: 40px;
+}
+/* Tooltips du zoom-controls-wrapper : affichés au-dessus des boutons
+   plutôt qu'en dessous, car ce bloc est ancré en bas de l'écran. */
+.zoom-controls-wrapper [data-tooltip]::before {
+    top: auto;
+    bottom: 100%;
+    transform: translateX(-50%) translateY(-6px);
+}
+
+.zoom-controls-wrapper [data-tooltip]::after {
+    top: auto;
+    bottom: 100%;
+    transform: translateX(-50%) translateY(-1px);
+    border-width: 5px 5px 0 5px;
+    border-color: rgba(15, 15, 15, 0.9) transparent transparent transparent;
+}
+
+.zoom-controls-wrapper [data-tooltip]:hover::before {
+    transform: translateX(-50%) translateY(-8px);
+}
+
+.zoom-controls-wrapper [data-tooltip]:hover::after {
+    transform: translateX(-50%) translateY(-3px);
+}
 
   .words-sidebar {
       display: flex;
