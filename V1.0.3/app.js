@@ -38,6 +38,8 @@ let setTransform = null;
 let isSaveAsMode = false;
 let openSectionId = null;
 
+let hasUnsavedChanges = false;
+
 
 /* ===================================================================== */
 /* 2. INITIALISATION ET CYCLE DE VIE                                     */
@@ -525,6 +527,7 @@ function render() {
           input.value = char;
           updatePanel();
           updatePlacedWordsList();
+          markAsDirty()
           persistSession();
           moveToNextLetter(1);
         }
@@ -545,6 +548,7 @@ function render() {
         cell.definition = e.target.innerText.toUpperCase();
         const sideInput = document.getElementById("definitionInput");
         if (sideInput) sideInput.value = cell.definition;
+        markAsDirty()
         persistSession();
       });
       el.appendChild(editable);
@@ -564,8 +568,8 @@ function render() {
       editables[0].addEventListener("focus", () => { currentInputDir = topDir; selectCellSilently(index); const sideInput = document.getElementById("topDefinitionInput"); if (sideInput) sideInput.value = cell.top.definition; });
       editables[1].addEventListener("focus", () => { currentInputDir = botDir; selectCellSilently(index); const sideInput = document.getElementById("bottomDefinitionInput"); if (sideInput) sideInput.value = cell.bottom.definition; });
 
-      editables[0].addEventListener("input", e => { cell.top.definition = e.target.innerText.toUpperCase(); const sideInput = document.getElementById("topDefinitionInput"); if (sideInput) sideInput.value = cell.top.definition; persistSession(); });
-      editables[1].addEventListener("input", e => { cell.bottom.definition = e.target.innerText.toUpperCase(); const sideInput = document.getElementById("bottomDefinitionInput"); if (sideInput) sideInput.value = cell.bottom.definition; persistSession(); });
+      editables[0].addEventListener("input", e => { cell.top.definition = e.target.innerText.toUpperCase(); const sideInput = document.getElementById("topDefinitionInput"); if (sideInput) sideInput.value = cell.top.definition; markAsDirty(); persistSession(); });
+      editables[1].addEventListener("input", e => { cell.bottom.definition = e.target.innerText.toUpperCase(); const sideInput = document.getElementById("bottomDefinitionInput"); if (sideInput) sideInput.value = cell.bottom.definition; markAsDirty(); persistSession(); });
 
       const svgTop = createArrowElement(topDir, "top"); if (svgTop) halves[0].appendChild(svgTop);
       const svgBottom = createArrowElement(botDir, "bottom"); if (svgBottom) halves[1].appendChild(svgBottom);
@@ -582,6 +586,7 @@ function render() {
 
   updatePanel();
   updatePlacedWordsList();
+  markAsDirty();
   persistSession();
 }
 
@@ -689,6 +694,9 @@ function updatePanel() {
     const parent = findParentWordForLetter(selected, currentInputDir);
     if (parent) renderWordBox(wordContainer, "Mot associé", parent.data.word, parent.data.indexes, "word-letter", parent.dir);
   }
+
+
+
 }
 
 function updatePlacedWordsList() {
@@ -927,6 +935,7 @@ function fillWordInGrid(word, indexes) {
   for (let i = 0; i < indexes.length; i++) {
     if (i < word.length) cells[indexes[i]].letter = word[i];
   }
+  markAsDirty()
   render();
 }
 
@@ -953,7 +962,7 @@ function setCellType(type) {
   if (selected === null) return;
   const cell = cells[selected];
   cell.type = type;
-  
+
   if (type === "double" || type === "definition") {
     const { row, col } = getCellRowCol(selected);
     if (row === 0) {
@@ -965,6 +974,7 @@ function setCellType(type) {
     }
   }
   render();
+  markAsDirty()
   persistSession();
 }
 
@@ -1001,6 +1011,7 @@ function updateHalfDefinition(which, value) {
 function clearCell() {
   if (selected === null) return;
   cells[selected] = emptyCell();
+  markAsDirty()
   render();
 }
 
@@ -1335,6 +1346,7 @@ function saveGridToCloud(gridData) {
 
       hideApiLoader()
       if (data.success) {
+        markAsClean()
         if (data.id) {
           currentGridId = data.id;
         }
@@ -1435,6 +1447,8 @@ function restorePreviousSession() {
     updateGridGeometry();
   }
 
+  markAsClean()
+
   closeRestoreModal();
 }
 
@@ -1459,6 +1473,7 @@ function newGrid() {
   cells = createDefaultGridCells(COLS, ROWS);
   selected = null;
   updateGridDisplay();
+  markAsClean()
   openSettingsModal();
 }
 
@@ -1473,6 +1488,7 @@ function executeClearGrid() {
   cells = Array.from({ length: COLS * ROWS }, emptyCell);
   selected = null;
   render();
+  markAsDirty()
   closeClearModal();
 }
 
@@ -1501,7 +1517,7 @@ async function loadSelectedGrid(name) {
     if (typeof updateGridGeometry === 'function') {
       updateGridGeometry();
     }
-
+    markAsClean()
     closeLoadModal();
   }
 }
@@ -1824,6 +1840,8 @@ async function applySettings() {
     }
     selected = null;
   }
+
+  markAsDirty()
 
   // 4. Déterminer s'il s'agit d'une mise à jour (PUT) ou d'une création (POST)
   const method = currentGridId ? 'PUT' : 'POST';
@@ -2236,5 +2254,55 @@ function closeCustomConfirm() {
   if (confirmModal) {
     // Retire la classe pour lancer l'animation de disparition
     confirmModal.classList.remove('active');
+  }
+}
+
+
+
+//===========================================================================
+
+function updateSaveBadge() {
+  
+  // Remplacez '.btn-save' ou '#saveBtn' par le sélecteur exact de votre bouton d'enregistrement dans la toolbar
+  const saveBtn = document.getElementById('saveBtn');
+  if (!saveBtn) return;
+
+  // Gestion ou création du badge orange
+  let badge = saveBtn.querySelector('.unsaved-badge');
+  if (hasUnsavedChanges) {
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'unsaved-badge';
+      // Style rapide en JS ou via vos classes CSS
+      badge.style.position = 'absolute';
+      badge.style.top = '4px';
+      badge.style.right = '4px';
+      badge.style.width = '8px';
+      badge.style.height = '8px';
+      badge.style.backgroundColor = '#f97316'; // Orange
+      badge.style.borderRadius = '50%';
+      saveBtn.style.position = 'relative'; // Assure le positionnement relatif du bouton
+      saveBtn.appendChild(badge);
+    }
+  } else {
+    if (badge) {
+      badge.remove();
+    }
+  }
+}
+
+function markAsDirty() {
+  
+  if (!hasUnsavedChanges) {
+    hasUnsavedChanges = true;
+    updateSaveBadge();
+  }
+}
+
+function markAsClean() {
+  
+  if (hasUnsavedChanges) {
+    hasUnsavedChanges = false;
+    updateSaveBadge();
   }
 }
