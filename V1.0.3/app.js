@@ -1991,7 +1991,7 @@ async function openLoadModal() {
       nameSpan.textContent = name;
 
       if (isOpen) {
-        nameSpan.style.opacity = "0.5";
+        
         nameSpan.style.pointerEvents = "none";
         nameSpan.title = "Grille actuellement ouverte";
 
@@ -2012,7 +2012,6 @@ async function openLoadModal() {
 
       if (isOpen) {
         delBtn.disabled = true;
-        delBtn.style.opacity = "0.3";
         delBtn.style.cursor = "not-allowed";
         delBtn.style.pointerEvents = "none";
       } else {
@@ -2089,13 +2088,41 @@ function openUserModal() {
       emailModalDisplay.textContent = USER.email;
     }
 
+    const firstName = USER.first_name || '';
+    const lastName = USER.last_name || '';
+    const fullName = (firstName || lastName) ? `${firstName} ${lastName}`.trim() : "Utilisateur";
+
     const nameModalDisplay = document.getElementById("userNameModalDisplay");
     if (nameModalDisplay) {
-      const firstName = USER.first_name || '';
-      const lastName = USER.last_name || '';
-      const fullName = (firstName || lastName) ? `${firstName} ${lastName}`.trim() : "Utilisateur";
-
       nameModalDisplay.textContent = fullName;
+    }
+
+    // Gestion de l'avatar Google-like
+    const avatarDisplay = document.getElementById("userAvatarDisplay");
+    if (avatarDisplay) {
+      // 1. Calcul des initiales (ex: "Jean Dupont" -> "JD")
+      let initials = "";
+      if (firstName) initials += firstName.charAt(0);
+      if (lastName) initials += lastName.charAt(0);
+      
+      if (!initials && USER.email) {
+        initials = USER.email.charAt(0);
+      }
+      initials = (initials || "U").toUpperCase();
+      avatarDisplay.textContent = initials;
+
+      // 2. Attribution d'une couleur de fond stable basée sur le nom ou l'email
+      const colors = [
+        '#1976d2', '#d32f2f', '#388e3c', '#f57c00', 
+        '#7b1fa1', '#0097a7', '#c2185b', '#5d4037'
+      ];
+      let hash = 0;
+      const str = USER.email || fullName;
+      for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const colorIndex = Math.abs(hash) % colors.length;
+      avatarDisplay.style.backgroundColor = colors[colorIndex];
     }
   }
 }
@@ -2222,8 +2249,8 @@ function showCustomConfirm(message) {
           <h3 style="margin: 0; font-size: 1.25rem; font-weight: 600; color: #1a1a1a;">Confirmation</h3>
           <p id="customConfirmMessage" style="margin: 0; font-size: 0.95rem; color: #4a4a4a; line-height: 1.5;"></p>
           <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px;">
-            <button type="button" id="customConfirmCancelBtn" style="padding: 10px 20px; background: #e5e7eb; color: #374151; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; transition: background-color 0.2s ease;">Annuler</button>
-            <button type="button" id="customConfirmOkBtn" style="padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; transition: background-color 0.2s ease;">Confirmer</button>
+            <button type="button" id="customConfirmCancelBtn" class="btn-danger" style="padding: 10px 20px; font-weight: 500; cursor: pointer; transition: background-color 0.2s ease;">Annuler</button>
+            <button type="button" id="customConfirmOkBtn" class="btn-primary" style="padding: 10px 20px;font-weight: 500; cursor: pointer; transition: background-color 0.2s ease;">Confirmer</button>
           </div>
         </div>
       `;
@@ -2240,11 +2267,7 @@ function showCustomConfirm(message) {
     okBtn.parentNode.replaceChild(newOkBtn, okBtn);
     cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
 
-    newCancelBtn.addEventListener('mouseenter', () => newCancelBtn.style.backgroundColor = '#d1d5db');
-    newCancelBtn.addEventListener('mouseleave', () => newCancelBtn.style.backgroundColor = '#e5e7eb');
-
-    newOkBtn.addEventListener('mouseenter', () => newOkBtn.style.backgroundColor = '#1d4ed8');
-    newOkBtn.addEventListener('mouseleave', () => newOkBtn.style.backgroundColor = '#2563eb');
+ 
 
     newOkBtn.addEventListener('click', () => {
       closeCustomConfirm();

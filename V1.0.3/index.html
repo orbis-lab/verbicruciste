@@ -65,7 +65,7 @@
           <input type="password" id="loginPassword" required placeholder="••••••••" autocomplete="current-password">
         </div>
         <div id="loginError" class="error-msg"></div>
-        <button type="submit" class="btn-primary">Se connecter</button>
+        <button type="submit" class="btn-primary login-btn">Se connecter</button>
       </form>
 
       <!-- Formulaire d'Inscription -->
@@ -201,6 +201,24 @@
     <aside class="left">
       <div class="inner-aside">
 
+        
+        <div class="main-section" id="grilleMainSection">
+          <button class="aside-close-btn" onclick="closeAllSectionModals()" data-tooltip="Fermer">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+          <h1 class="main-section-tilte">Grille</h1>
+          <div class="section">
+            <h2>Nom</h2>
+            <div id="gridNameDisplay" class="grid-name-display">Ma Grille</div>
+          </div>
+
+          <div class="section">
+            <h2>Dimension</h2>
+            <div id="gridDimensionsDisplay">Grille de 13 colonnes × 17 lignes</div>
+          </div>
+        </div>
+
+
         <div class="main-section" id="selectionMainSection">
           <button class="aside-close-btn" onclick="closeAllSectionModals()" data-tooltip="Fermer">
             <span class="material-symbols-outlined">close</span>
@@ -279,22 +297,6 @@
                 </button>
               </div>
             </div>
-          </div>
-        </div>
-
-        <div class="main-section" id="grilleMainSection">
-          <button class="aside-close-btn" onclick="closeAllSectionModals()" data-tooltip="Fermer">
-            <span class="material-symbols-outlined">close</span>
-          </button>
-          <h1 class="main-section-tilte">Grille</h1>
-          <div class="section">
-            <h2>Nom</h2>
-            <div id="gridNameDisplay" class="grid-name-display">Ma Grille</div>
-          </div>
-
-          <div class="section">
-            <h2>Dimension</h2>
-            <div id="gridDimensionsDisplay">Grille de 13 colonnes × 17 lignes</div>
           </div>
         </div>
 
@@ -414,7 +416,15 @@
         <button class="modal-close" onclick="closeUserModal()">&times;</button>
       </div>
       <div class="modal-body">
-        <div class="form-group" style="margin-bottom: 12px;">
+
+
+
+        <div class="form-group id-card" style="margin-bottom: 12px;">
+          <!-- Ajout de l'avatar utilisateur -->
+          <div id="userAvatarDisplay"
+            style="width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 500; color: #ffffff; margin-bottom: 16px; background-color: #1976d2;">
+
+          </div>
           <label>Nom d'utilisateur</label>
           <div id="userNameModalDisplay" style="font-weight: bold; color: #333; font-size: 14px; padding: 4px 0;">-
           </div>
@@ -426,7 +436,7 @@
         </div>
         <div style="height: 1px; background: #eee; margin: 16px 0;"></div>
         <div>
-          <button type="button" class="btn-primary" style="background: #e53935; width: 100%;"
+          <button type="button" class="btn-danger" style=" width: 100%;"
             onclick="handleLogout(); closeUserModal();">
             Se déconnecter
           </button>
