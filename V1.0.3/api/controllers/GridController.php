@@ -15,7 +15,7 @@ class GridController {
     // GET /api/grids
     public function getAll() {
         $userId = $this->checkAuth();
-        $stmt = $this->pdo->prepare("SELECT id, name, cols, `rows`, version, content FROM grids WHERE user_id = ?");
+        $stmt = $this->pdo->prepare("SELECT id, name, cols, `rows`, version, content, updated_at FROM grids WHERE user_id = ?");
         $stmt->execute([$userId]);
         echo json_encode(['success' => true, 'grids' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
     }
@@ -23,7 +23,7 @@ class GridController {
     // GET /api/grids/{id}
     public function getOne($id) {
         $userId = $this->checkAuth();
-        $stmt = $this->pdo->prepare("SELECT id, name, cols, `rows`, version, content FROM grids WHERE id = ? AND user_id = ?");
+        $stmt = $this->pdo->prepare("SELECT id, name, cols, `rows`, version, content, updated_at FROM grids WHERE id = ? AND user_id = ?");
         $stmt->execute([$id, $userId]);
         $grid = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($grid) {
@@ -75,7 +75,7 @@ class GridController {
         $data = json_decode(file_get_contents('php://input'), true);
 
         try {
-            $stmt = $this->pdo->prepare("UPDATE grids SET name = ?, cols = ?, `rows` = ?, version = ?, content = ? WHERE id = ? AND user_id = ?");
+            $stmt = $this->pdo->prepare("UPDATE grids SET name = ?, cols = ?, `rows` = ?, version = ?, content = ?, updated_at = NOW() WHERE id = ? AND user_id = ?");
             $stmt->execute([
                 $data['name'] ?? 'Sans nom',
                 $data['cols'] ?? 13,

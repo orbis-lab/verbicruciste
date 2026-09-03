@@ -39,6 +39,7 @@ let isSaveAsMode = false;
 let openSectionId = null;
 
 let hasUnsavedChanges = false;
+let openedFromStartup = false; // Indique si le modal secondaire vient du démarrage
 
 
 /* ===================================================================== */
@@ -694,9 +695,6 @@ function updatePanel() {
     const parent = findParentWordForLetter(selected, currentInputDir);
     if (parent) renderWordBox(wordContainer, "Mot associé", parent.data.word, parent.data.indexes, "word-letter", parent.dir);
   }
-
-
-
 }
 
 function updatePlacedWordsList() {
@@ -837,31 +835,14 @@ function createDefaultGridCells(cols, rows) {
     for (let c = 0; c < cols; c++) {
       let cell = emptyCell();
 
-      // Case de définition sur la 1ère colonne (une ligne sur deux)
-      // ou sur la 1ère ligne (une colonne sur deux)
       if ((r === 0 && c % 2 === 0) || (c === 0 && r % 2 === 0)) {
-        cell.type = "double"; // Définition double par défaut sur les bords
-
-        // Par défaut (cases non situées sur un bord) : définition du haut
-        // vers la droite, définition du bas vers le bas. emptyCell() pose
-        // déjà cell.top.arrow = "E" et cell.bottom.arrow = "S", donc rien
-        // à faire pour ce cas général.
+        cell.type = "double";
 
         if (r === 0 && c === 0) {
-          // Coin supérieur gauche : les deux orientations par défaut
-          // (haut → droite, bas → bas) pointent déjà vers l'intérieur de
-          // la grille, aucun ajustement nécessaire.
+          cell.bottom.arrow = "E";
         } else if (r === 0) {
-          // Première ligne (hors coin) : la définition du haut doit
-          // pointer vers le bas (vers l'intérieur de la grille) plutôt
-          // que vers la droite. La définition du bas garde son
-          // orientation par défaut (vers le bas).
           cell.top.arrow = "S";
         } else if (c === 0) {
-          // Première colonne (hors coin) : la définition du bas doit
-          // pointer vers la droite (vers l'intérieur de la grille) plutôt
-          // que vers le bas. La définition du haut garde son orientation
-          // par défaut (vers la droite).
           cell.bottom.arrow = "E";
         }
       }
@@ -966,9 +947,9 @@ function setCellType(type) {
   if (type === "double" || type === "definition") {
     const { row, col } = getCellRowCol(selected);
     if (row === 0) {
-      cell.arrow = "S"; // Flèche principale vers le bas sur le bord supérieur
+      cell.arrow = "S";
     } else if (col === 0) {
-      cell.arrow = "E"; // Flèche principale vers la droite sur le bord gauche
+      cell.arrow = "E";
     } else if (!cell.arrow) {
       cell.arrow = "E";
     }
@@ -984,9 +965,9 @@ function setArrow(dir) {
   if (cell.type === "definition") {
     const { row, col } = getCellRowCol(selected);
     if (row === 0) {
-      cell.arrow = "S"; // Forcé vers le bas sur la première ligne
+      cell.arrow = "S";
     } else if (col === 0) {
-      cell.arrow = "E"; // Forcé vers la droite sur la première colonne
+      cell.arrow = "E";
     } else {
       cell.arrow = dir;
     }
@@ -1293,7 +1274,8 @@ async function getSavedGrids() {
           id: grid.id,
           cols: finalCols,
           rows: finalRows,
-          cells: finalCells
+          cells: finalCells,
+          updated_at: grid.updated_at
         };
       });
       return gridsMap;
@@ -1362,7 +1344,6 @@ function saveGridToCloud(gridData) {
 }
 
 async function deleteSavedGrid(name, gridId) {
-  // Remplacement du confirm natif par le custom avec await
   const confirmed = await showCustomConfirm(`Supprimer la grille "${name}" du cloud ?`);
   if (!confirmed) return;
 
@@ -1403,12 +1384,15 @@ async function deleteSavedGrid(name, gridId) {
 async function checkPreviousSession() {
   try {
     const savedGrids = await getSavedGrids();
-    const gridNames = Object.keys(savedGrids);
+    const gridEntries = Object.entries(savedGrids);
 
-    if (gridNames.length === 0) return;
+    if (gridEntries.length === 0) return;
 
-    const lastName = gridNames[gridNames.length - 1];
-    const lastGridData = savedGrids[lastName];
+    gridEntries.sort((a, b) => {
+      return new Date(b[1].updated_at) - new Date(a[1].updated_at);
+    });
+
+    const [lastName, lastGridData] = gridEntries[0];
 
     if (!lastGridData || !lastGridData.cells || lastGridData.cells.length === 0) return;
 
@@ -1439,6 +1423,7 @@ function restorePreviousSession() {
   }
   sessionRestorePending = false;
   pendingSessionData = null;
+  openedFromStartup = false; // Sortie du parcours de démarrage
   selected = null;
 
   updateGridDisplay();
@@ -1455,26 +1440,25 @@ function restorePreviousSession() {
 function discardPreviousSession() {
   sessionRestorePending = false;
   pendingSessionData = null;
+  openedFromStartup = true; // Provenance du démarrage
   closeRestoreModal();
   persistSession();
   newGrid();
 }
 
 function openSession() {
+  openedFromStartup = true; // Provenance du démarrage
   openLoadModal();
   closeRestoreModal();
 }
 
 function newGrid() {
-  currentGridId = null;
-  currentGridName = "Ma Nouvelle Grille";
-  COLS = 13;
-  ROWS = 18;
-  cells = createDefaultGridCells(COLS, ROWS);
-  selected = null;
-  updateGridDisplay();
-  markAsClean()
-  openSettingsModal();
+  isCreatingNewGrid = true;
+  document.getElementById('settingsModalTitle').textContent = "Créer une nouvelle grille";
+  document.getElementById('settingName').value = "Ma Nouvelle Grille";
+  document.getElementById('settingCols').value = 13;
+  document.getElementById('settingRows').value = 18;
+  document.getElementById('settingsModal').classList.add('active');
 }
 
 async function clearGrid() {
@@ -1485,8 +1469,7 @@ async function clearGrid() {
 }
 
 function executeClearGrid() {
-  cells = Array.from({ length: COLS * ROWS }, emptyCell);
-  selected = null;
+  cells = createDefaultGridCells(COLS, ROWS); selected = null;
   render();
   markAsDirty()
   closeClearModal();
@@ -1511,6 +1494,7 @@ async function loadSelectedGrid(name) {
 
     currentGridName = name;
     selected = null;
+    openedFromStartup = false; // Grille chargée avec succès
 
     updateGridDisplay();
 
@@ -1539,6 +1523,7 @@ function importJSON(event) {
         currentGridName = file.name.replace(".json", "");
       }
       selected = null;
+      openedFromStartup = false;
       updateGridDisplay();
     } catch (err) {
       showCustomAlert("Fichier JSON invalide.");
@@ -1579,7 +1564,6 @@ async function handleLogin(event) {
   errorDiv.textContent = '';
 
   try {
-
     showApiLoader()
 
     const response = await fetch('./api/auth/login', {
@@ -1613,7 +1597,6 @@ async function handleRegister(event) {
   errorDiv.textContent = '';
 
   try {
-
     showApiLoader()
 
     const response = await fetch('./api/auth/register', {
@@ -1639,7 +1622,6 @@ async function handleRegister(event) {
 
 async function handleLogout() {
   try {
-
     await fetch('./api/auth/logout', {
       method: 'POST',
       credentials: 'include'
@@ -1652,7 +1634,6 @@ async function handleLogout() {
 
 async function checkUserSession() {
   try {
-
     showApiLoader()
 
     const response = await fetch('./api/user', {
@@ -1672,9 +1653,8 @@ async function checkUserSession() {
 
     if (data.success && data.user) {
       USER = data.user;
-      // En cas de succès de la connexion :
-      document.getElementById('authModal').classList.remove('active'); // Retire la classe active pour cacher la modale
-      document.getElementById('userMenuContainer').style.display = 'block'; // Réaffiche le menu utilisateur si besoin
+      document.getElementById('authModal').classList.remove('active');
+      document.getElementById('userMenuContainer').style.display = 'block';
     }
   } catch (err) {
     console.error("Erreur lors de la vérification de session :", err);
@@ -1688,7 +1668,6 @@ async function checkUserSession() {
 
 async function applyStoredTheme() {
   try {
-
     showApiLoader()
 
     const response = await fetch('./api/user/preferences', {
@@ -1739,7 +1718,6 @@ function toggleThemeMenu(event) {
 
 async function changeUserTheme(newTheme) {
   try {
-
     showApiLoader()
 
     const response = await fetch('./api/user/preferences', {
@@ -1773,53 +1751,57 @@ async function changeUserTheme(newTheme) {
 /* 11. MODALS, PARAMÈTRES ET NAVIGATION MOBILE                           */
 /* ===================================================================== */
 
-
-
 function openSettingsModal() {
+  isCreatingNewGrid = false;
   document.getElementById('settingsModalTitle').textContent = "Paramètres de la grille";
   document.getElementById('settingName').value = currentGridName;
   document.getElementById('settingCols').value = COLS;
   document.getElementById('settingRows').value = ROWS;
   document.getElementById('settingsModal').classList.add('active');
 }
+
 function closeSettingsModal() {
   document.getElementById("settingsModal").classList.remove("active");
+
+  // Si on venait du démarrage (création annulée), on réaffiche le modal restoreModal
+  if (openedFromStartup) {
+    const restoreModal = document.getElementById("restoreModal");
+    if (restoreModal) {
+      restoreModal.classList.add("active");
+    }
+    openedFromStartup = false;
+  }
 }
 
 function closeSettingsModalOnOverlay(event) {
-  if (event.target.id === "settingsModal") closeSettingsModal();
+  //if (event.target.id === "settingsModal") closeSettingsModal();
 }
 
 async function applySettings() {
-  // 1. Récupérer les valeurs depuis les éléments du DOM de la modale paramètres
   const nameInput = document.getElementById('settingName');
   const colsInput = document.getElementById('settingCols');
   const rowsInput = document.getElementById('settingRows');
 
   const newName = nameInput ? nameInput.value.trim() : currentGridName;
   if (!newName) {
-    if (typeof showCustomAlert === 'function') {
-      showCustomAlert("Veuillez entrer un nom valide pour la grille.");
-    } else {
-      showCustomAlert("Veuillez entrer un nom valide pour la grille.");
-    }
+    showCustomAlert("Veuillez entrer un nom valide pour la grille.");
     return;
   }
 
-  // 2. Vérifier si le nom existe déjà dans le cloud (uniquement si le nom change ou si c'est une nouvelle grille)
+  const newCols = colsInput ? parseInt(colsInput.value, 10) : COLS;
+  const newRows = rowsInput ? parseInt(rowsInput.value, 10) : ROWS;
+
   try {
     const savedGrids = await getSavedGrids();
-    // Si une autre grille possède déjà ce nom (et qu'on n'est pas en train de modifier exactement la même)
     if (savedGrids.hasOwnProperty(newName)) {
       const existingGrid = savedGrids[newName];
-      // Si l'ID est différent de notre grille actuelle, c'est un doublon
-      if (!currentGridId || existingGrid.id !== currentGridId) {
+      if (isCreatingNewGrid || !currentGridId || existingGrid.id !== currentGridId) {
         const overwrite = await showCustomConfirm(`Une grille portant le nom "${newName}" existe déjà dans le cloud. Voulez-vous l'écraser ?`);
         if (!overwrite) {
           return;
         } else {
-          // Si l'utilisateur accepte d'écraser, on récupère l'ID de la grille existante pour faire un PUT dessus
           currentGridId = existingGrid.id;
+          isCreatingNewGrid = false;
         }
       }
     }
@@ -1827,23 +1809,28 @@ async function applySettings() {
     console.error("Erreur lors de la vérification des doublons :", err);
   }
 
-  currentGridName = newName;
-  const newCols = colsInput ? parseInt(colsInput.value, 10) : COLS;
-  const newRows = rowsInput ? parseInt(rowsInput.value, 10) : ROWS;
-
-  // 3. Si les dimensions changent, on réinitialise ou ajuste le tableau des cellules
-  if (newCols !== COLS || newRows !== ROWS) {
+  if (isCreatingNewGrid) {
+    currentGridId = null;
+    currentGridName = newName;
     COLS = newCols;
     ROWS = newRows;
-    if (typeof emptyCell === 'function') {
-      cells = createDefaultGridCells(COLS, ROWS);
-    }
+    cells = createDefaultGridCells(COLS, ROWS);
     selected = null;
+    markAsClean();
+  } else {
+    currentGridName = newName;
+
+    if (newCols !== COLS || newRows !== ROWS) {
+      COLS = newCols;
+      ROWS = newRows;
+      if (typeof emptyCell === 'function') {
+        cells = createDefaultGridCells(COLS, ROWS);
+      }
+      selected = null;
+    }
+    markAsDirty();
   }
 
-  markAsDirty()
-
-  // 4. Déterminer s'il s'agit d'une mise à jour (PUT) ou d'une création (POST)
   const method = currentGridId ? 'PUT' : 'POST';
   const url = currentGridId ? `./api/grids/${currentGridId}` : './api/grids';
 
@@ -1873,31 +1860,26 @@ async function applySettings() {
 
     if (data.success) {
       if (data.id) {
-        currentGridId = data.id; // Sauvegarde du nouvel ID si c'était une création (POST)
+        currentGridId = data.id;
       }
+      if (isCreatingNewGrid) {
+        isCreatingNewGrid = false;
+      }
+      openedFromStartup = false; // Validation réussie, on sort du parcours de démarrage
     } else {
       const errorMsg = "Erreur lors de l'enregistrement des paramètres : " + (data.error || "Erreur inconnue");
-      if (typeof showCustomAlert === 'function') {
-        showCustomAlert(errorMsg);
-      } else {
-        alert(errorMsg);
-      }
-      return; // On ne ferme pas la modale en cas d'erreur serveur
+      showCustomAlert(errorMsg);
+      return;
     }
   } catch (err) {
     console.error("Erreur réseau :", err);
     if (typeof hideApiLoader === 'function') {
       hideApiLoader();
     }
-    if (typeof showCustomAlert === 'function') {
-      showCustomAlert("Impossible de contacter le serveur.");
-    } else {
-      alert("Impossible de contacter le serveur.");
-    }
+    showCustomAlert("Impossible de contacter le serveur.");
     return;
   }
 
-  // 5. Actualiser l'affichage et fermer la fenêtre de configuration si tout est OK
   if (typeof updateGridDisplay === 'function') {
     updateGridDisplay();
   }
@@ -1919,7 +1901,7 @@ function closeSaveModal() {
 }
 
 function closeSaveModalOnOverlay(event) {
-  if (event.target.id === "saveModal") closeSaveModal();
+  //if (event.target.id === "saveModal") closeSaveModal();
 }
 
 async function confirmSave(destination) {
@@ -1995,24 +1977,50 @@ async function openLoadModal() {
     names.forEach(name => {
       const gridInfo = savedGrids[name];
       const gridId = gridInfo.id || null;
+      
+      const isOpen = (name === currentGridName) || (gridId && currentGridId && gridId === currentGridId);
 
       const row = document.createElement("div");
       row.className = "grid-item-row";
+      if (isOpen) {
+        row.classList.add("current-grid");
+      }
 
       const nameSpan = document.createElement("span");
       nameSpan.className = "grid-item-name";
       nameSpan.textContent = name;
-      nameSpan.onclick = () => loadSelectedGrid(name);
+
+      if (isOpen) {
+        nameSpan.style.opacity = "0.5";
+        nameSpan.style.pointerEvents = "none";
+        nameSpan.title = "Grille actuellement ouverte";
+
+        const badge = document.createElement("span");
+        badge.textContent = " (Ouverte)";
+        badge.style.fontSize = "12px";
+        badge.style.color = "#666";
+        badge.style.fontStyle = "italic";
+        nameSpan.appendChild(badge);
+      } else {
+        nameSpan.onclick = () => loadSelectedGrid(name);
+      }
 
       const delBtn = document.createElement("button");
       delBtn.className = "grid-item-delete";
-      delBtn.title = "Supprimer";
+      delBtn.title = isOpen ? "Impossible de supprimer la grille ouverte" : "Supprimer";
       delBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size:18px;">delete</span>`;
 
-      delBtn.onclick = (e) => {
-        e.stopPropagation();
-        deleteSavedGrid(name, gridId);
-      };
+      if (isOpen) {
+        delBtn.disabled = true;
+        delBtn.style.opacity = "0.3";
+        delBtn.style.cursor = "not-allowed";
+        delBtn.style.pointerEvents = "none";
+      } else {
+        delBtn.onclick = (e) => {
+          e.stopPropagation();
+          deleteSavedGrid(name, gridId);
+        };
+      }
 
       row.appendChild(nameSpan);
       row.appendChild(delBtn);
@@ -2024,10 +2032,19 @@ async function openLoadModal() {
 
 function closeLoadModal() {
   document.getElementById("loadModal").classList.remove("active");
+
+  // Si on venait du démarrage sans charger de grille, on réaffiche restoreModal
+  if (openedFromStartup) {
+    const restoreModal = document.getElementById("restoreModal");
+    if (restoreModal) {
+      restoreModal.classList.add("active");
+    }
+    openedFromStartup = false;
+  }
 }
 
 function closeLoadModalOnOverlay(event) {
-  if (event.target.id === "loadModal") closeLoadModal();
+  //if (event.target.id === "loadModal") closeLoadModal();
 }
 
 function closeClearModal() {
@@ -2038,9 +2055,9 @@ function closeClearModal() {
 }
 
 function closeClearModalOnOverlay(event) {
-  if (event.target.id === "clearGridModal") {
+  /* if (event.target.id === "clearGridModal") {
     closeClearModal();
-  }
+  } */
 }
 
 function openThemeModal() {
@@ -2054,7 +2071,7 @@ function closeThemeModal() {
 }
 
 function closeThemeModalOnOverlay(event) {
-  if (event.target.id === "themeModal") closeThemeModal();
+  //if (event.target.id === "themeModal") closeThemeModal();
 }
 
 function selectThemeAndClose(themeName) {
@@ -2089,7 +2106,7 @@ function closeUserModal() {
 }
 
 function closeUserModalOnOverlay(event) {
-  if (event.target.id === "userModal") closeUserModal();
+  //if (event.target.id === "userModal") closeUserModal();
 }
 
 function openHelpModal() {
@@ -2101,7 +2118,7 @@ function closeHelpModal() {
 }
 
 function closeHelpModalOnOverlay(event) {
-  if (event.target.id === "helpModal") closeHelpModal();
+  //if (event.target.id === "helpModal") closeHelpModal();
 }
 
 function closeRestoreModal() {
@@ -2141,13 +2158,11 @@ function closeMobileMenu() {
   if (backdrop) backdrop.classList.remove("active");
 }
 
-// Afficher le loader
 function showApiLoader() {
   const loader = document.getElementById("apiLoader");
   if (loader) loader.classList.add("active");
 }
 
-// Masquer le loader
 function hideApiLoader() {
   const loader = document.getElementById("apiLoader");
   if (loader) loader.classList.remove("active");
@@ -2161,7 +2176,6 @@ function showCustomAlert(message) {
     alertModal.id = 'customAlertModal';
     alertModal.className = 'modal-overlay';
 
-    // Ajout d'un style propre directement sur la structure ou via vos classes CSS
     alertModal.innerHTML = `
       <div class="modal-card" style="padding: 24px; display: flex; flex-direction: column; gap: 16px; min-width: 320px; max-width: 400px; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
         <h3 style="margin: 0; font-size: 1.25rem; font-weight: 600; color: #1a1a1a;">Information</h3>
@@ -2226,7 +2240,6 @@ function showCustomConfirm(message) {
     okBtn.parentNode.replaceChild(newOkBtn, okBtn);
     cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
 
-    // Gestion des effets de survol (Hover)
     newCancelBtn.addEventListener('mouseenter', () => newCancelBtn.style.backgroundColor = '#d1d5db');
     newCancelBtn.addEventListener('mouseleave', () => newCancelBtn.style.backgroundColor = '#e5e7eb');
 
@@ -2252,36 +2265,27 @@ function showCustomConfirm(message) {
 function closeCustomConfirm() {
   const confirmModal = document.getElementById('customConfirmModal');
   if (confirmModal) {
-    // Retire la classe pour lancer l'animation de disparition
     confirmModal.classList.remove('active');
   }
 }
 
-
-
-//===========================================================================
-
 function updateSaveBadge() {
-  
-  // Remplacez '.btn-save' ou '#saveBtn' par le sélecteur exact de votre bouton d'enregistrement dans la toolbar
   const saveBtn = document.getElementById('saveBtn');
   if (!saveBtn) return;
 
-  // Gestion ou création du badge orange
   let badge = saveBtn.querySelector('.unsaved-badge');
   if (hasUnsavedChanges) {
     if (!badge) {
       badge = document.createElement('span');
       badge.className = 'unsaved-badge';
-      // Style rapide en JS ou via vos classes CSS
       badge.style.position = 'absolute';
       badge.style.top = '4px';
       badge.style.right = '4px';
       badge.style.width = '8px';
       badge.style.height = '8px';
-      badge.style.backgroundColor = '#f97316'; // Orange
+      badge.style.backgroundColor = '#f97316';
       badge.style.borderRadius = '50%';
-      saveBtn.style.position = 'relative'; // Assure le positionnement relatif du bouton
+      saveBtn.style.position = 'relative';
       saveBtn.appendChild(badge);
     }
   } else {
@@ -2292,7 +2296,6 @@ function updateSaveBadge() {
 }
 
 function markAsDirty() {
-  
   if (!hasUnsavedChanges) {
     hasUnsavedChanges = true;
     updateSaveBadge();
@@ -2300,7 +2303,6 @@ function markAsDirty() {
 }
 
 function markAsClean() {
-  
   if (hasUnsavedChanges) {
     hasUnsavedChanges = false;
     updateSaveBadge();
