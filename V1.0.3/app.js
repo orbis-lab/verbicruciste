@@ -49,7 +49,7 @@ async function init() {
   applyStoredTheme();
   checkUserSession();
 
-  cells = Array.from({ length: COLS * ROWS }, emptyCell);
+  cells = createDefaultGridCells(COLS, ROWS);
 
   checkPreviousSession();
   updateGridDisplay();
@@ -789,6 +789,37 @@ function renderWordBox(container, labelText, word, indexes, idPrefix, dir) {
 /* ===================================================================== */
 /* 6. ÉDITION DES CELLULES ET MODIFICATIONS                              */
 /* ===================================================================== */
+function createDefaultGridCells(cols, rows) {
+  let newCells = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      let cell = emptyCell();
+      
+      // Case de définition sur la 1ère colonne (une ligne sur deux) 
+      // ou sur la 1ère ligne (une colonne sur deux)
+      if ((r === 0 && c % 2 === 0) || (c === 0 && r % 2 === 0)) {
+        cell.type = "double"; // Définition double par défaut sur les bords
+        
+        // Configuration des flèches selon la position sur les bords
+        if (r === 0 && c === 0) {
+          // Coin supérieur gauche : flèches vers la droite et le bas
+          cell.arrow1 = "E";
+          cell.arrow2 = "S";
+        } else if (r === 0) {
+          // Première ligne : flèche horizontale (ex: vers la gauche/droite) et verticale vers le bas
+          cell.arrow1 = "W";
+          cell.arrow2 = "E";
+          cell.arrow = "S"; // ou arrow1/arrow2 selon votre structure de stockage interne
+        } else if (c === 0) {
+          // Première colonne : flèche vers la droite
+          cell.arrow = "E";
+        }
+      }
+      newCells.push(cell);
+    }
+  }
+  return newCells;
+}
 
 function setType(type) {
   if (selected === null || selected === undefined || Number.isNaN(Number(selected))) {
@@ -856,11 +887,46 @@ function updateDefinition(value) {
   }
 }
 
-function setArrow(direction) {
-  if (selected !== null && cells[selected].type === "definition") {
-    cells[selected].arrow = direction;
-    currentInputDir = direction;
+function getCellRowCol(index) {
+  return {
+    row: Math.floor(index / COLS),
+    col: index % COLS
+  };
+}
+
+function setCellType(type) {
+  if (selected === null) return;
+  const cell = cells[selected];
+  cell.type = type;
+  
+  if (type === "double" || type === "definition") {
+    const { row, col } = getCellRowCol(selected);
+    if (row === 0) {
+      cell.arrow = "S"; // Flèche principale vers le bas sur le bord supérieur
+    } else if (col === 0) {
+      cell.arrow = "E"; // Flèche principale vers la droite sur le bord gauche
+    } else if (!cell.arrow) {
+      cell.arrow = "E";
+    }
+  }
+  render();
+  persistSession();
+}
+
+function setArrow(dir) {
+  if (selected === null) return;
+  const cell = cells[selected];
+  if (cell.type === "definition") {
+    const { row, col } = getCellRowCol(selected);
+    if (row === 0) {
+      cell.arrow = "S"; // Forcé vers le bas sur la première ligne
+    } else if (col === 0) {
+      cell.arrow = "E"; // Forcé vers la droite sur la première colonne
+    } else {
+      cell.arrow = dir;
+    }
     render();
+    persistSession();
   }
 }
 
@@ -1331,17 +1397,14 @@ function openSession() {
 }
 
 function newGrid() {
-  // On réinitialise complètement l'ID pour forcer la création d'une nouvelle grille au moment de l'enregistrement
   currentGridId = null;
-
   currentGridName = "Ma Nouvelle Grille";
   COLS = 13;
   ROWS = 18;
-  cells = Array.from({ length: COLS * ROWS }, emptyCell);
+  cells = createDefaultGridCells(COLS, ROWS);
   selected = null;
-
   updateGridDisplay();
-  openSettingsModal(); // Ouvre les paramètres pour configurer et enregistrer la nouvelle grille proprement
+  openSettingsModal();
 }
 
 async function clearGrid() {
@@ -1702,7 +1765,7 @@ async function applySettings() {
     COLS = newCols;
     ROWS = newRows;
     if (typeof emptyCell === 'function') {
-      cells = Array.from({ length: COLS * ROWS }, emptyCell);
+      cells = createDefaultGridCells(COLS, ROWS);
     }
     selected = null;
   }
