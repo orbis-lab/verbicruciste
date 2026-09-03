@@ -330,7 +330,10 @@ function findDuplicateWords() {
       }
     };
     if (cell.type === "definition") processWord(cell.arrow);
-    else if (cell.type === "double") { processWord("E"); processWord("S"); }
+    else if (cell.type === "double") {
+      processWord((cell.top && cell.top.arrow) || "E");
+      processWord((cell.bottom && cell.bottom.arrow) || "S");
+    }
   });
 
   wordCounts.forEach((occurrences, word) => {
@@ -372,14 +375,14 @@ function findParentWordForLetter(letterIdx, preferredDir = currentInputDir) {
       if (c >= 0) {
         const defIdx = row * COLS + c; const defCell = cells[defIdx];
         if (defCell.type === "definition" && defCell.arrow === "E") return { dir: "E", data: getWordData(defIdx, "E") };
-        if (defCell.type === "double") return { dir: "E", data: getWordData(defIdx, "E") };
+        if (defCell.type === "double" && ((defCell.top && defCell.top.arrow === "E") || (defCell.bottom && defCell.bottom.arrow === "E"))) return { dir: "E", data: getWordData(defIdx, "E") };
       }
     } else if (dir === "S") {
       let r = row - 1; while (r >= 0 && cells[r * COLS + col].type === "letter") r--;
       if (r >= 0) {
         const defIdx = r * COLS + col; const defCell = cells[defIdx];
         if (defCell.type === "definition" && defCell.arrow === "S") return { dir: "S", data: getWordData(defIdx, "S") };
-        if (defCell.type === "double") return { dir: "S", data: getWordData(defIdx, "S") };
+        if (defCell.type === "double" && ((defCell.top && defCell.top.arrow === "S") || (defCell.bottom && defCell.bottom.arrow === "S"))) return { dir: "S", data: getWordData(defIdx, "S") };
       }
     }
     return null;
@@ -402,9 +405,12 @@ function getHighlightedCells() {
   }
 
   if (cell.type === "double") {
-    const topIdx = getWordData(selected, "E").indexes; const botIdx = getWordData(selected, "S").indexes;
+    const topDir = (cell.top && cell.top.arrow) || "E";
+    const botDir = (cell.bottom && cell.bottom.arrow) || "S";
+    const topIdx = getWordData(selected, topDir).indexes;
+    const botIdx = getWordData(selected, botDir).indexes;
     const all = Array.from(new Set([...topIdx, ...botIdx]));
-    activeWordTarget = { direction: currentInputDir, indexes: currentInputDir === "S" ? botIdx : topIdx };
+    activeWordTarget = { direction: currentInputDir, indexes: currentInputDir === botDir ? botIdx : topIdx };
     return all;
   }
 
@@ -542,25 +548,27 @@ function render() {
         persistSession();
       });
       el.appendChild(editable);
-      const svg = createArrowSVG(cell.arrow, "full");
+      const svg = createArrowElement(cell.arrow, "full");
       if (svg) el.appendChild(svg);
     }
 
     if (cell.type === "double") {
+      const topDir = (cell.top && cell.top.arrow) || "E";
+      const botDir = (cell.bottom && cell.bottom.arrow) || "S";
       el.innerHTML = `<div class="half"><div class="def-editable" contenteditable="true"></div></div><div class="half"><div class="def-editable" contenteditable="true"></div></div>`;
       const halves = el.querySelectorAll(".half");
       const editables = el.querySelectorAll(".def-editable");
       editables[0].innerText = cell.top.definition;
       editables[1].innerText = cell.bottom.definition;
 
-      editables[0].addEventListener("focus", () => { currentInputDir = "E"; selectCellSilently(index); const sideInput = document.getElementById("topDefinitionInput"); if (sideInput) sideInput.value = cell.top.definition; });
-      editables[1].addEventListener("focus", () => { currentInputDir = "S"; selectCellSilently(index); const sideInput = document.getElementById("bottomDefinitionInput"); if (sideInput) sideInput.value = cell.bottom.definition; });
+      editables[0].addEventListener("focus", () => { currentInputDir = topDir; selectCellSilently(index); const sideInput = document.getElementById("topDefinitionInput"); if (sideInput) sideInput.value = cell.top.definition; });
+      editables[1].addEventListener("focus", () => { currentInputDir = botDir; selectCellSilently(index); const sideInput = document.getElementById("bottomDefinitionInput"); if (sideInput) sideInput.value = cell.bottom.definition; });
 
       editables[0].addEventListener("input", e => { cell.top.definition = e.target.innerText.toUpperCase(); const sideInput = document.getElementById("topDefinitionInput"); if (sideInput) sideInput.value = cell.top.definition; persistSession(); });
       editables[1].addEventListener("input", e => { cell.bottom.definition = e.target.innerText.toUpperCase(); const sideInput = document.getElementById("bottomDefinitionInput"); if (sideInput) sideInput.value = cell.bottom.definition; persistSession(); });
 
-      const svgTop = createArrowSVG("E", "top"); if (svgTop) halves[0].appendChild(svgTop);
-      const svgBottom = createArrowSVG("S", "bottom"); if (svgBottom) halves[1].appendChild(svgBottom);
+      const svgTop = createArrowElement(topDir, "top"); if (svgTop) halves[0].appendChild(svgTop);
+      const svgBottom = createArrowElement(botDir, "bottom"); if (svgBottom) halves[1].appendChild(svgBottom);
     }
 
     el.dataset.index = index;
@@ -577,38 +585,44 @@ function render() {
   persistSession();
 }
 
-function createArrowSVG(dir, zone) {
-  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("class", "arrow-svg");
-  let startX = 0, startY = 0, endX = 0, endY = 0, customStyle = "";
+function createArrowElement(dir, zone) {
+  const img = document.createElement("img");
+  img.className = "arrow-svg";
+  img.draggable = false;
+  img.setAttribute("alt", "flèche");
+
   if (zone === "full") {
-    if (dir === "S") { startX = 27; startY = 54; endX = 27; endY = 64; }
-    else if (dir === "E") { startX = 54; startY = 27; endX = 64; endY = 27; }
-  } else if (zone === "top") { startX = 0; startY = 0; endX = 10; endY = 0; customStyle = "left: 48px;"; }
-  else if (zone === "bottom") { startX = 0; startY = 0; endX = 0; endY = 10; customStyle = "top: 22px;"; }
+    if (dir === "S") {
+      img.src = "./media/arrows/common-def-down-arrow.svg";
+      img.classList.add("arrow-common-down", "arrow-full-down");
+    } else {
+      img.src = "./media/arrows/common-def-right-arrow.svg";
+      img.classList.add("arrow-common-right", "arrow-full-right");
+    }
+  } else if (zone === "top") {
+    img.classList.add("arrow-top");
+    if (dir === "S") {
+      img.src = "./media/arrows/top-def-down-arrow.svg";
+      img.classList.add("arrow-top-down");
+    } else {
+      img.src = "./media/arrows/common-def-right-arrow.svg";
+      img.classList.add("arrow-common-right", "arrow-top-right");
+    }
+  } else if (zone === "bottom") {
+    img.classList.add("arrow-bottom");
+    if (dir === "E") {
+      img.src = "./media/arrows/bottom-def-right-arrow.svg";
+      img.classList.add("arrow-bottom-right");
+    } else {
+      img.src = "./media/arrows/common-def-down-arrow.svg";
+      img.classList.add("arrow-common-down", "arrow-bottom-down");
+    }
+  }
+  return img;
+}
 
-  const minX = Math.min(startX, endX) - 5; const minY = Math.min(startY, endY) - 5;
-  const maxX = Math.max(startX, endX) + 5; const maxY = Math.max(startY, endY) + 5;
-
-  if (customStyle) svg.setAttribute("style", `${customStyle} width:${maxX - minX}px; height:${maxY - minY}px; overflow:visible;`);
-  else svg.setAttribute("style", `left:${minX}px; top:${minY}px; width:${maxX - minX}px; height:${maxY - minY}px; overflow:visible;`);
-  svg.setAttribute("viewBox", `${minX} ${minY} ${maxX - minX} ${maxY - minY}`);
-
-  const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-  const marker = document.createElementNS("http://www.w3.org/2000/svg", "marker");
-  const markerId = `arrowhead-${Math.random().toString(36).substr(2, 9)}`;
-  marker.setAttribute("id", markerId); marker.setAttribute("markerWidth", "6"); marker.setAttribute("markerHeight", "6");
-  marker.setAttribute("refX", "5"); marker.setAttribute("refY", "3"); marker.setAttribute("orient", "auto");
-
-  const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
-  polygon.setAttribute("points", "0 0, 6 3, 0 6"); polygon.setAttribute("fill", "#222");
-  marker.appendChild(polygon); defs.appendChild(marker); svg.appendChild(defs);
-
-  const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-  line.setAttribute("x1", startX); line.setAttribute("y1", startY); line.setAttribute("x2", endX); line.setAttribute("y2", endY);
-  line.setAttribute("stroke", "#222"); line.setAttribute("stroke-width", "2"); line.setAttribute("marker-end", `url(#${markerId})`);
-  svg.appendChild(line);
-  return svg;
+function createArrowSVG(dir, zone) {
+  return createArrowElement(dir, zone);
 }
 
 function updatePanel() {
@@ -645,12 +659,30 @@ function updatePanel() {
   }
 
   if (cell.type === "double") {
+    const topDir = (cell.top && cell.top.arrow) || "E";
+    const botDir = (cell.bottom && cell.bottom.arrow) || "S";
     document.getElementById("topDefinitionInput").value = cell.top.definition;
     document.getElementById("bottomDefinitionInput").value = cell.bottom.definition;
-    const dataTop = getWordData(selected, "E");
-    const dataBot = getWordData(selected, "S");
-    renderWordBox(wordContainer, "Mot du haut", dataTop.word, dataTop.indexes, "word-top", "E");
-    renderWordBox(wordContainer, "Mot du bas", dataBot.word, dataBot.indexes, "word-bot", "S");
+
+    const btnTopE = document.getElementById("btnTopArrowE");
+    const btnTopS = document.getElementById("btnTopArrowS");
+    if (btnTopE) btnTopE.classList.toggle("active", topDir === "E");
+    if (btnTopS) btnTopS.classList.toggle("active", topDir === "S");
+
+    const btnBotE = document.getElementById("btnBottomArrowE");
+    const btnBotS = document.getElementById("btnBottomArrowS");
+    if (btnBotE) btnBotE.classList.toggle("active", botDir === "E");
+    if (btnBotS) btnBotS.classList.toggle("active", botDir === "S");
+
+    const topIcon = document.getElementById("topDefArrowIcon");
+    if (topIcon) topIcon.textContent = topDir === "E" ? "arrow_right_alt" : "south";
+    const botIcon = document.getElementById("bottomDefArrowIcon");
+    if (botIcon) botIcon.textContent = botDir === "E" ? "arrow_right_alt" : "south";
+
+    const dataTop = getWordData(selected, topDir);
+    const dataBot = getWordData(selected, botDir);
+    renderWordBox(wordContainer, "Mot du haut", dataTop.word, dataTop.indexes, "word-top", topDir);
+    renderWordBox(wordContainer, "Mot du bas", dataBot.word, dataBot.indexes, "word-bot", botDir);
   }
 
   if (cell.type === "letter") {
@@ -670,8 +702,10 @@ function updatePlacedWordsList() {
       const data = getWordData(idx, cell.arrow);
       if (data.indexes.length >= 2 && data.word && !data.word.includes("_")) foundWordsMap.set(data.indexes.join(","), { text: data.word, indexes: data.indexes });
     } else if (cell.type === "double") {
-      const dataTop = getWordData(idx, "E"); if (dataTop.indexes.length >= 2 && dataTop.word && !dataTop.word.includes("_")) foundWordsMap.set(dataTop.indexes.join(","), { text: dataTop.word, indexes: dataTop.indexes });
-      const dataBot = getWordData(idx, "S"); if (dataBot.indexes.length >= 2 && dataBot.word && !dataBot.word.includes("_")) foundWordsMap.set(dataBot.indexes.join(","), { text: dataBot.word, indexes: dataBot.indexes });
+      const topDir = (cell.top && cell.top.arrow) || "E";
+      const botDir = (cell.bottom && cell.bottom.arrow) || "S";
+      const dataTop = getWordData(idx, topDir); if (dataTop.indexes.length >= 2 && dataTop.word && !dataTop.word.includes("_")) foundWordsMap.set(dataTop.indexes.join(","), { text: dataTop.word, indexes: dataTop.indexes });
+      const dataBot = getWordData(idx, botDir); if (dataBot.indexes.length >= 2 && dataBot.word && !dataBot.word.includes("_")) foundWordsMap.set(dataBot.indexes.join(","), { text: dataBot.word, indexes: dataBot.indexes });
     }
   });
 
@@ -794,25 +828,33 @@ function createDefaultGridCells(cols, rows) {
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       let cell = emptyCell();
-      
-      // Case de définition sur la 1ère colonne (une ligne sur deux) 
+
+      // Case de définition sur la 1ère colonne (une ligne sur deux)
       // ou sur la 1ère ligne (une colonne sur deux)
       if ((r === 0 && c % 2 === 0) || (c === 0 && r % 2 === 0)) {
         cell.type = "double"; // Définition double par défaut sur les bords
-        
-        // Configuration des flèches selon la position sur les bords
+
+        // Par défaut (cases non situées sur un bord) : définition du haut
+        // vers la droite, définition du bas vers le bas. emptyCell() pose
+        // déjà cell.top.arrow = "E" et cell.bottom.arrow = "S", donc rien
+        // à faire pour ce cas général.
+
         if (r === 0 && c === 0) {
-          // Coin supérieur gauche : flèches vers la droite et le bas
-          cell.arrow1 = "E";
-          cell.arrow2 = "S";
+          // Coin supérieur gauche : les deux orientations par défaut
+          // (haut → droite, bas → bas) pointent déjà vers l'intérieur de
+          // la grille, aucun ajustement nécessaire.
         } else if (r === 0) {
-          // Première ligne : flèche horizontale (ex: vers la gauche/droite) et verticale vers le bas
-          cell.arrow1 = "W";
-          cell.arrow2 = "E";
-          cell.arrow = "S"; // ou arrow1/arrow2 selon votre structure de stockage interne
+          // Première ligne (hors coin) : la définition du haut doit
+          // pointer vers le bas (vers l'intérieur de la grille) plutôt
+          // que vers la droite. La définition du bas garde son
+          // orientation par défaut (vers le bas).
+          cell.top.arrow = "S";
         } else if (c === 0) {
-          // Première colonne : flèche vers la droite
-          cell.arrow = "E";
+          // Première colonne (hors coin) : la définition du bas doit
+          // pointer vers la droite (vers l'intérieur de la grille) plutôt
+          // que vers le bas. La définition du haut garde son orientation
+          // par défaut (vers la droite).
+          cell.bottom.arrow = "E";
         }
       }
       newCells.push(cell);
@@ -829,13 +871,26 @@ function setType(type) {
   selected = Number(selected);
   cells[selected].type = type;
   if (type === "double") {
-    cells[selected].top.arrow = "E";
-    cells[selected].bottom.arrow = "S";
+    if (!cells[selected].top) cells[selected].top = { definition: "", arrow: "E" };
+    if (!cells[selected].bottom) cells[selected].bottom = { definition: "", arrow: "S" };
+    if (!cells[selected].top.arrow) cells[selected].top.arrow = "E";
+    if (!cells[selected].bottom.arrow) cells[selected].bottom.arrow = "S";
   }
   render();
   if (type === "definition") focusDefinitionCell(selected);
   else if (type === "double") focusDoubleDefinitionCell(selected);
   else if (type === "letter") selectCellAndFocus(selected);
+}
+
+function setHalfArrow(which, dir) {
+  if (selected === null) return;
+  const cell = cells[selected];
+  if (cell.type === "double") {
+    if (!cell[which]) cell[which] = { definition: "", arrow: dir };
+    else cell[which].arrow = dir;
+    render();
+    persistSession();
+  }
 }
 
 function focusDefinitionCell(index) {

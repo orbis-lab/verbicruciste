@@ -244,20 +244,40 @@
 
             <div id="doubleDefControls" style="display:none">
               <div class="inline-label-with-icon">
-                <span>Définition du haut</span><span class="material-symbols-outlined"
+                <span>Définition du haut</span><span id="topDefArrowIcon" class="material-symbols-outlined"
                   style="font-size:18px;">arrow_right_alt</span>
               </div>
               <textarea id="topDefinitionInput" rows="3"
                 style="width:100%;resize:vertical;border:1px solid #bbb;border-radius:5px;padding:7px;text-transform:uppercase;"
                 oninput="updateHalfDefinition('top', this.value)"></textarea>
 
-              <div class="inline-label-with-icon">
-                <span>Définition du bas</span><span class="material-symbols-outlined"
+              <label>Direction flèche du haut</label>
+              <div class="arrows-row">
+                <button id="btnTopArrowE" onclick="setHalfArrow('top', 'E')" data-tooltip="Vers la droite">
+                  <span class="material-symbols-outlined">arrow_right_alt</span>
+                </button>
+                <button id="btnTopArrowS" onclick="setHalfArrow('top', 'S')" data-tooltip="Vers le bas">
+                  <span class="material-symbols-outlined">south</span>
+                </button>
+              </div>
+
+              <div class="inline-label-with-icon" style="margin-top:12px;">
+                <span>Définition du bas</span><span id="bottomDefArrowIcon" class="material-symbols-outlined"
                   style="font-size:18px;">south</span>
               </div>
               <textarea id="bottomDefinitionInput" rows="3"
                 style="width:100%;resize:vertical;border:1px solid #bbb;border-radius:5px;padding:7px;text-transform:uppercase;"
                 oninput="updateHalfDefinition('bottom', this.value)"></textarea>
+
+              <label>Direction flèche du bas</label>
+              <div class="arrows-row">
+                <button id="btnBottomArrowE" onclick="setHalfArrow('bottom', 'E')" data-tooltip="Vers la droite">
+                  <span class="material-symbols-outlined">arrow_right_alt</span>
+                </button>
+                <button id="btnBottomArrowS" onclick="setHalfArrow('bottom', 'S')" data-tooltip="Vers le bas">
+                  <span class="material-symbols-outlined">south</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
