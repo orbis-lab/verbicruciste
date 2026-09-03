@@ -1,10 +1,14 @@
-  /* Règles spécifiques aux appareils mobiles, regroupées dans un fichier dédié.
+/* Règles spécifiques aux appareils mobiles, regroupées dans un fichier dédié.
      NOTE: @import doit obligatoirement être placé avant toute autre règle CSS,
      ce qui signifie que les règles de mobile.css sont insérées tout en haut de la
      cascade. Pour être certaines de prendre le dessus sur les règles desktop
      (déclarées plus bas dans ce fichier, donc plus tardivement dans la cascade),
      les propriétés de mise en page critiques de mobile.css utilisent !important. */
   @import url("./mobile.css");
+
+  /* ===================================================================== */
+  /* 1. VARIABLES / CONFIGURATION GLOBALE                                  */
+  /* ===================================================================== */
 
   :root {
       --cell: 54px;
@@ -14,7 +18,11 @@
   }
 
 
-  /* 1. Largeur de la barre de scroll */
+  /* ===================================================================== */
+  /* 2. RESET ET RÈGLES GÉNÉRALES                                          */
+  /* ===================================================================== */
+
+  /* Largeur de la barre de scroll */
   ::-webkit-scrollbar {
       width: 6px;
       /* Réduit l'épaisseur (verticale) */
@@ -44,6 +52,10 @@
   * {
       box-sizing: border-box;
   }
+
+  /* ===================================================================== */
+  /* 3. BODY ET STRUCTURE PRINCIPALE                                       */
+  /* ===================================================================== */
 
   body {
       margin: 0;
@@ -113,11 +125,11 @@
       }
   }
 
-  /* Styles pour l'authentification et le menu utilisateur */
+  /* ===================================================================== */
+  /* 9. MODALES (structure générique + authentification)                  */
+  /* ===================================================================== */
 
   /* État de base de la modale (fermée / par défaut) */
-/* --- Bloc unique et corrigé pour les modales --- */
-/* --- Bloc modale corrigé et ultra-prioritaire --- */
 .modal-overlay {
     position: fixed !important;
     top: 0 !important;
@@ -154,6 +166,7 @@
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2), 0px 0px 0px 11px rgba(0, 0, 0, 0.1);
     border: solid 1px rgba(0, 0, 0, 0.5);
     overflow: hidden;
+    animation: fadeIn 0.15s ease-out;
 }
 
 .modal-overlay.active .modal-card {
@@ -218,21 +231,6 @@
       color: #dc3545;
       font-size: 0.85rem;
       margin-bottom: 10px;
-  }
-
-  .btn-primary {
-      width: 100%;
-      padding: 10px;
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      font-size: 1rem;
-      cursor: pointer;
-  }
-
-  .btn-primary:hover {
-      background: #0056b3;
   }
 
   /* Menu déroulant utilisateur dans la toolbar */
@@ -317,6 +315,10 @@
       }
   }
 
+  /* ===================================================================== */
+  /* 4. HEADER / NAVIGATION                                                */
+  /* ===================================================================== */
+
   header {
       background: #222;
       color: white;
@@ -342,6 +344,10 @@
   .header-title-logo {
       display: none;
   }
+
+  /* ===================================================================== */
+  /* 5. TOOLBAR                                                            */
+  /* ===================================================================== */
 
   /* Topbar centrée d'actions & Tooltips personnalisés */
   .topbar-container {
@@ -569,6 +575,10 @@
       transform: translateX(-50%) translateY(3px);
   }
 
+  /* ===================================================================== */
+  /* 6. MISE EN PAGE PRINCIPALE (ASIDE GAUCHE / ÉDITEUR / ASIDE DROITE)    */
+  /* ===================================================================== */
+
   .app {
       display: flex;
       gap: 18px;
@@ -634,6 +644,10 @@
           display: none !important;
       }
   }
+
+  /* ===================================================================== */
+  /* 7. CONTRÔLES DE LA GRILLE (ZOOM)                                      */
+  /* ===================================================================== */
 
   .zoom-controls-wrapper {
       display: flex;
@@ -822,6 +836,10 @@
       margin-bottom: 2px;
   }
 
+  /* ===================================================================== */
+  /* 12. ÉLÉMENTS SPÉCIFIQUES (mots placés, suggestions, dictionnaire)     */
+  /* ===================================================================== */
+
   .word-item {
       background: #f9f9f9;
       border: 1px solid #ddd;
@@ -847,6 +865,10 @@
       border-color: #f44336 !important;
       color: #c62828 !important;
   }
+
+  /* ===================================================================== */
+  /* GRILLE ET CELLULES                                                    */
+  /* ===================================================================== */
 
   .grid {
       display: grid;
@@ -1228,26 +1250,20 @@
       color: white;
   }
 
+  /* ===================================================================== */
+  /* 11. NOTIFICATIONS / MESSAGES                                          */
+  /* ===================================================================== */
+
   .info {
       font-size: 12px;
       line-height: 1.45;
       color: #555;
   }
 
-  /* MODAL POPUP */
-  
-
-  .modal-card {
-      background: white;
-      width: 380px;
-      max-width: 90%;
-      border-radius: 10px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-      overflow: hidden;
-      animation: fadeIn 0.15s ease-out;
-      box-shadow: 0px 0px 0px 11px rgba(0, 0, 0, 0.1);
-      border: solid 1px rgba(0, 0, 0, 0.5);
-  }
+  /* -----------------------------------------------------------------------
+     Suite du bloc "9. MODALES" : en-tête / corps de modale et boutons liés
+     aux modales (Enregistrer, Ouvrir, Paramètres, Compte…). Regroupé plus
+     haut avec .modal-overlay pour la structure générique de la modale. */
 
   @keyframes fadeIn {
       from {
@@ -1290,6 +1306,10 @@
       overflow-y: auto;
   }
 
+  /* ===================================================================== */
+  /* 10. FORMULAIRES (contenu des modales)                                 */
+  /* ===================================================================== */
+
   .form-group {
       margin-bottom: 12px;
   }
@@ -1309,7 +1329,12 @@
       font-size: 14px;
   }
 
+  /* ===================================================================== */
+  /* 8. BOUTONS                                                            */
+  /* ===================================================================== */
+
   .btn-primary {
+      width: 100%;
       background: #2583ff;
       color: white;
       padding: 8px 16px;
@@ -1438,10 +1463,16 @@
       font-style: italic;
   }
 
+  /* ===================================================================== */
+  /* 13. RESPONSIVE / MOBILE / IMPRESSION                                  */
+  /* ===================================================================== */
+
   /* NOTE : les styles mobiles (header, aside, éditeur…) vivent désormais
      exclusivement dans mobile.css (voir @import en tout début de fichier),
      afin d'éviter tout conflit entre deux media queries « max-width: 1100px »
-     distinctes. */
+     distinctes. Le bloc @media print ci-dessous gère l'impression (partagée
+     entre desktop et mobile). Voir aussi le petit @media print plus haut
+     (règle .dark-theme) qui neutralise le thème sombre à l'impression. */
 
   @media print {
       body {
@@ -1520,5 +1551,3 @@
           text-shadow: none !important;
       }
   }
-
- 

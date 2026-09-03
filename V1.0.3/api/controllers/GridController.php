@@ -45,7 +45,7 @@ class GridController {
                 $userId, 
                 $data['name'] ?? 'Sans nom', 
                 $data['cols'] ?? 13, 
-                $data['rows'] ?? 17, 
+                $data['rows'] ?? 18, 
                 $data['version'] ?? 2, 
                 json_encode($data['content'] ?? null)
             ]);
@@ -79,7 +79,7 @@ class GridController {
             $stmt->execute([
                 $data['name'] ?? 'Sans nom',
                 $data['cols'] ?? 13,
-                $data['rows'] ?? 17,
+                $data['rows'] ?? 18,
                 $data['version'] ?? 2,
                 json_encode($data['content'] ?? null),
                 $id,

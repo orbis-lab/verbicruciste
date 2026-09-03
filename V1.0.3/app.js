@@ -4,7 +4,7 @@
 
 let currentGridId = null;
 let COLS = 13;
-let ROWS = 17;
+let ROWS = 18;
 let currentGridName = "Ma Grille";
 let isCreatingNewGrid = false;
 let sessionRestorePending = false;
@@ -1154,7 +1154,7 @@ async function getSavedGrids() {
           : rawContent;
 
         let finalCols = grid.cols !== undefined ? parseInt(grid.cols, 10) : (gridContent.cols || 13);
-        let finalRows = grid.rows !== undefined ? parseInt(grid.rows, 10) : (gridContent.rows || 17);
+        let finalRows = grid.rows !== undefined ? parseInt(grid.rows, 10) : (gridContent.rows || 18);
         let finalCells = Array.isArray(gridContent) ? gridContent : (gridContent.cells || gridContent);
 
         gridsMap[grid.name] = {
@@ -1283,7 +1283,7 @@ async function checkPreviousSession() {
     pendingSessionData = {
       name: lastName,
       cols: lastGridData.cols || 13,
-      rows: lastGridData.rows || 17,
+      rows: lastGridData.rows || 18,
       cells: lastGridData.cells,
       id: lastGridData.id || null
     };
@@ -1299,7 +1299,7 @@ async function checkPreviousSession() {
 function restorePreviousSession() {
   if (pendingSessionData) {
     COLS = pendingSessionData.cols || 13;
-    ROWS = pendingSessionData.rows || 17;
+    ROWS = pendingSessionData.rows || 18;
     cells = pendingSessionData.cells;
     currentGridName = pendingSessionData.name || "Ma Grille";
     currentGridId = pendingSessionData.id || null;
@@ -1336,7 +1336,7 @@ function newGrid() {
 
   currentGridName = "Ma Nouvelle Grille";
   COLS = 13;
-  ROWS = 17;
+  ROWS = 18;
   cells = Array.from({ length: COLS * ROWS }, emptyCell);
   selected = null;
 
@@ -1365,7 +1365,7 @@ async function loadSelectedGrid(name) {
   if (data) {
     if (Array.isArray(data)) {
       COLS = 13;
-      ROWS = 17;
+      ROWS = 18;
       cells = data;
       currentGridId = null;
     } else {
@@ -1398,10 +1398,10 @@ function importJSON(event) {
       if (data.cells) {
         cells = data.cells;
         COLS = data.cols || 13;
-        ROWS = data.rows || 17;
+        ROWS = data.rows || 18;
         currentGridName = data.name || file.name.replace(".json", "");
       } else if (Array.isArray(data)) {
-        cells = data; COLS = 13; ROWS = 17;
+        cells = data; COLS = 13; ROWS = 18;
         currentGridName = file.name.replace(".json", "");
       }
       selected = null;

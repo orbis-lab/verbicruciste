@@ -14,36 +14,16 @@
 
 @media (max-width: 1100px) {
 
-  /* Verrouille le fond pour empêcher le scroll global de la page mobile */
-/* Bloque le scroll global de la page sur mobile */
-html, body {
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  margin: 0;
-  padding: 0;
-}
-
-/* Force l'application à rester calée sur la hauteur de l'écran */
-.app {
-  height: 100svh;
-  max-height: 100svh;
-  display: flex;
-  overflow: hidden;
-}
-
-/* Ancre solidement le header pour qu'il ne remonte jamais */
-header {
-  position: relative;
-  flex-shrink: 0;
-}
-
   /* --- App plein écran, sans défilement de la page ---------------------- */
+  /* Verrouille le fond pour empêcher le scroll global de la page mobile */
   html,
   body {
+    position: fixed;
+    width: 100%;
     height: 100%;
     overflow: hidden !important;
+    margin: 0;
+    padding: 0;
   }
 
   /* Empêche les comportements tactiles par défaut (zoom, double-tap pour zoomer) sur l'UI globale */
@@ -224,21 +204,13 @@ header {
   }
 
   .mobile-nav-btn {
-        /* display: flex !important; */
-        /* flex-direction: column; */
-        align-items: center;
-        /* justify-content: center; */
-        /* gap: 2px; */
-        /* flex: 1 1 0; */
-        /* max-width: 140px; */
-        min-height: 44px;
-        /* border: solid 1px black !important; */
-        padding: 6px 4px;
-        font-size: 11px;
-        font-weight: 600;
-        /* box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12); */
-        width: 100%;
-    }
+    align-items: center;
+    min-height: 44px;
+    padding: 6px 4px;
+    font-size: 11px;
+    font-weight: 600;
+    width: 100%;
+  }
 
   .mobile-nav-btn .material-symbols-outlined {
     font-size: 20px;
@@ -246,6 +218,8 @@ header {
 
   /* --- L'éditeur occupe tout l'espace restant, sans marge ---------------- */
   .app {
+    height: 100svh;
+    max-height: 100svh;
     flex: 1 1 auto !important;
     min-height: 0;
     display: flex !important;
