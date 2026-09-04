@@ -293,6 +293,8 @@
     align-self: flex-end;
     flex-shrink: 0;
     margin-bottom: 4px;
+    position: absolute;
+    top: 10px;
   }
 
   .mobile-section-backdrop.active {

@@ -194,6 +194,10 @@
       <span class="material-symbols-outlined">format_list_bulleted</span>
       <span>Mots</span>
     </button>
+    <button class="mobile-nav-btn" onclick="openSectionModal('MysteryWord')">
+      <span class="material-symbols-outlined">mystery</span>
+      <span>Mystère</span>
+    </button>
   </nav>
 
   <!-- Fond assombri commun aux modals de section -->
@@ -244,21 +248,32 @@
             </div>
           </div>
 
+          </h1>
+          <div class="section">
+            <h2>Case "Mot mystère"</h2>
+            <!-- Options de la case mystère -->
+            <div id="mysteryCellOptionsContainer" class="section-group"
+              style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; font-size: 14px;">
+
+                <label class="toggle-switch">
+                  <input type="checkbox" id="cellIsMysterySwitch" onchange="toggleCellMystery(this.checked)" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div style="margin-top: 10px;">
+                <span style="font-size: 13px; color: #666; display: block; margin-bottom: 6px;">Position dans le mot
+                  :</span>
+                <div id="cellMysteryPosButtonsContainer" class="mystery-pos-buttons-container"></div>
+              </div>
+            </div>
+          </div>
+
           <div class="section">
             <h2>Options</h2>
             <div id="selectedInfo" class="info">Cliquez sur une case de la grille.</div>
-<!-- Options de la case mystère -->
-<div id="mysteryCellOptionsContainer" class="section-group" style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
-  <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-size: 14px;">
-    <span>Case mot mystère</span>
-    <input type="checkbox" id="cellIsMysterySwitch" onchange="toggleCellMystery(this.checked)" />
-  </label>
-  
-  <div style="margin-top: 8px; display: flex; align-items: center; justify-content: space-between;">
-    <span style="font-size: 13px; color: #666;">Position dans le mot :</span>
-    <input type="number" id="cellMysteryPosInput" min="1" max="30" style="width: 60px; padding: 4px;" onchange="updateCellMysteryPosition(this.value)" />
-  </div>
-</div>
+
             <div id="wordFormedContainer"></div>
 
             <div id="singleDefControls" style="display:none">
@@ -352,9 +367,10 @@
           <h1 class="main-section-tilte">
             <span class="material-symbols-outlined main-section-icon">mystery</span>
             Mot mystère
-            <button class="icon-btn float-r mystery-setting-icon" id="openMysterySettingsBtn" data-tooltip="Paramétrer le mot mystère" onclick="openMysterySettingsModal()">
-            <span class="material-symbols-outlined">settings</span>
-        </button>
+            <button class="icon-btn float-r " id="openMysterySettingsBtn" data-tooltip="Paramétrer le mot mystère"
+              onclick="openMysterySettingsModal()">
+              <span class="material-symbols-outlined mystery-setting-icon">instant_mix</span>
+            </button>
           </h1>
           <div class="section">
             <div class="mystery-word-display" id="mysteryWordDisplay">_ _ _ _ _ _ _ _ _</div>
@@ -373,7 +389,7 @@
 
 
 
-        
+
 
 
         <div class="main-section" id="wordsMainSection">

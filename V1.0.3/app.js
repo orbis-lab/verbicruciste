@@ -481,6 +481,7 @@ function updateGridDisplay() {
 
   render();
   updateGridGeometry();
+  updateMysteryWordDisplay
 }
 
 function render() {
@@ -538,7 +539,7 @@ function render() {
           input.value = "";
           updatePanel();
           updatePlacedWordsList();
-          persistSession();
+
           moveToNextLetter(-1);
         } else if (e.key.length === 1 && /[a-zA-ZÀ-ÿ]/.test(e.key)) {
           e.preventDefault();
@@ -549,7 +550,7 @@ function render() {
           updatePlacedWordsList();
           markAsDirty()
           updateMysteryWordDisplay()
-          persistSession();
+
           moveToNextLetter(1);
         }
       });
@@ -570,7 +571,7 @@ function render() {
         const sideInput = document.getElementById("definitionInput");
         if (sideInput) sideInput.value = cell.definition;
         markAsDirty()
-        persistSession();
+
       });
       el.appendChild(editable);
       const svg = createArrowElement(cell.arrow, "full");
@@ -589,8 +590,8 @@ function render() {
       editables[0].addEventListener("focus", () => { currentInputDir = topDir; selectCellSilently(index); const sideInput = document.getElementById("topDefinitionInput"); if (sideInput) sideInput.value = cell.top.definition; });
       editables[1].addEventListener("focus", () => { currentInputDir = botDir; selectCellSilently(index); const sideInput = document.getElementById("bottomDefinitionInput"); if (sideInput) sideInput.value = cell.bottom.definition; });
 
-      editables[0].addEventListener("input", e => { cell.top.definition = e.target.innerText.toUpperCase(); const sideInput = document.getElementById("topDefinitionInput"); if (sideInput) sideInput.value = cell.top.definition; markAsDirty(); persistSession(); });
-      editables[1].addEventListener("input", e => { cell.bottom.definition = e.target.innerText.toUpperCase(); const sideInput = document.getElementById("bottomDefinitionInput"); if (sideInput) sideInput.value = cell.bottom.definition; markAsDirty(); persistSession(); });
+      editables[0].addEventListener("input", e => { cell.top.definition = e.target.innerText.toUpperCase(); const sideInput = document.getElementById("topDefinitionInput"); if (sideInput) sideInput.value = cell.top.definition; markAsDirty(); });
+      editables[1].addEventListener("input", e => { cell.bottom.definition = e.target.innerText.toUpperCase(); const sideInput = document.getElementById("bottomDefinitionInput"); if (sideInput) sideInput.value = cell.bottom.definition; markAsDirty(); });
 
       const svgTop = createArrowElement(topDir, "top"); if (svgTop) halves[0].appendChild(svgTop);
       const svgBottom = createArrowElement(botDir, "bottom"); if (svgBottom) halves[1].appendChild(svgBottom);
@@ -609,7 +610,7 @@ function render() {
   updatePlacedWordsList();
   markAsDirty();
   updateMysteryWordDisplay()
-  persistSession();
+
 }
 
 function createArrowElement(dir, zone) {
@@ -718,20 +719,30 @@ function updatePanel() {
   }
 
 
-// Gestion de l'affichage du bloc switch case mystère dans updatePanel()
+  // Gestion de l'affichage du bloc switch case mystère dans updatePanel()
   const mysteryOptionsContainer = document.getElementById("mysteryCellOptionsContainer");
   const mysterySwitch = document.getElementById("cellIsMysterySwitch");
   const mysteryPosInput = document.getElementById("cellMysteryPosInput");
 
-if (cell.type === "letter") {
+  if (cell.type === "letter") {
     if (mysteryOptionsContainer) mysteryOptionsContainer.style.display = "block";
     if (mysterySwitch) mysterySwitch.checked = !!cell.isMystery;
     if (mysteryPosInput) {
       mysteryPosInput.value = cell.mysteryPosition || 1;
       mysteryPosInput.disabled = !cell.isMystery;
-      mysteryPosInput.max = mysteryWordConfig.length || 9; // <-- Ajout de la limite max HTML
+      mysteryPosInput.max = mysteryWordConfig.length || 9;
       mysteryPosInput.min = 1;
     }
+
+    // ---> AJOUTER CE BLOC ICI <---
+    if (cell.isMystery) {
+      renderCellMysteryPositionButtons(cell.mysteryPosition || 1);
+    } else {
+      const container = document.getElementById('cellMysteryPosButtonsContainer');
+      if (container) container.innerHTML = '';
+    }
+    // ----------------------------
+
   } else {
     if (mysteryOptionsContainer) mysteryOptionsContainer.style.display = "none";
   }
@@ -919,7 +930,7 @@ function setHalfArrow(which, dir) {
     if (!cell[which]) cell[which] = { definition: "", arrow: dir };
     else cell[which].arrow = dir;
     render();
-    persistSession();
+
   }
 }
 
@@ -969,7 +980,7 @@ function updateDefinition(value) {
       const def = grid.children[selected].querySelector(".def-content");
       if (def && def !== document.activeElement) def.innerText = cells[selected].definition;
     }
-    persistSession();
+
   }
 }
 
@@ -997,7 +1008,7 @@ function setCellType(type) {
   }
   render();
   markAsDirty()
-  persistSession();
+
 }
 
 function setArrow(dir) {
@@ -1013,7 +1024,7 @@ function setArrow(dir) {
       cell.arrow = dir;
     }
     render();
-    persistSession();
+
   }
 }
 
@@ -1026,7 +1037,7 @@ function updateHalfDefinition(which, value) {
       const idx = which === "top" ? 0 : 1;
       if (editables[idx] && editables[idx] !== document.activeElement) editables[idx].innerText = cells[selected][which].definition;
     }
-    persistSession();
+
   }
 }
 
@@ -1278,18 +1289,11 @@ async function fetchWordDefinition(word, resultContainerId) {
 /* 8. PERSISTANCE, CLOUD ET GESTION DES GRILLES                          */
 /* ===================================================================== */
 
-function persistSession() {
-  if (sessionRestorePending) return;
-  try {
-    localStorage.setItem("motsFlechesLastSession", JSON.stringify({
-      name: currentGridName, cols: COLS, rows: ROWS, cells: cells
-    }));
-  } catch (e) { }
-}
+
 
 async function getSavedGrids() {
   try {
-    showApiLoader()
+    showApiLoader();
 
     const response = await fetch('./api/grids', {
       method: 'GET',
@@ -1297,7 +1301,7 @@ async function getSavedGrids() {
     });
     const data = await response.json();
 
-    hideApiLoader()
+    hideApiLoader();
 
     if (data.success && data.grids) {
       const gridsMap = {};
@@ -1309,13 +1313,27 @@ async function getSavedGrids() {
 
         let finalCols = grid.cols !== undefined ? parseInt(grid.cols, 10) : (gridContent.cols || 13);
         let finalRows = grid.rows !== undefined ? parseInt(grid.rows, 10) : (gridContent.rows || 18);
-        let finalCells = Array.isArray(gridContent) ? gridContent : (gridContent.cells || gridContent);
+        
+        // --- CORRECTION : Déclaration explicite des variables pour chaque grille ---
+        let finalCells = [];
+        let finalMysteryConfig = { length: 9 };
+
+        if (Array.isArray(gridContent)) {
+          finalCells = gridContent;
+        } else if (gridContent && typeof gridContent === 'object') {
+          finalCells = gridContent.cells || [];
+          if (gridContent.mysteryWordConfig) {
+            finalMysteryConfig = gridContent.mysteryWordConfig;
+          }
+        }
+        // -------------------------------------------------------------------------
 
         gridsMap[grid.name] = {
           id: grid.id,
           cols: finalCols,
           rows: finalRows,
           cells: finalCells,
+          mysteryWordConfig: finalMysteryConfig, // Désormais bien défini
           updated_at: grid.updated_at
         };
       });
@@ -1326,7 +1344,6 @@ async function getSavedGrids() {
   }
   return {};
 }
-
 async function directSaveGrid() {
   const payload = {
     id: currentGridId,
@@ -1348,10 +1365,12 @@ function saveGridToCloud(gridData) {
     cols: COLS,
     rows: ROWS,
     version: gridData.version || 2,
-    content: gridData.cells || cells
+    content: {
+      cells: gridData.cells || cells,
+      mysteryWordConfig: mysteryWordConfig // <-- On l'encapsule proprement ici
+    }
   };
 
-  payload.content.mysteryWordConfig = mysteryWordConfig
 
   const method = currentGridId ? 'PUT' : 'POST';
   const url = currentGridId ? `./api/grids/${currentGridId}` : './api/grids';
@@ -1445,7 +1464,8 @@ async function checkPreviousSession() {
       cols: lastGridData.cols || 13,
       rows: lastGridData.rows || 18,
       cells: lastGridData.cells,
-      id: lastGridData.id || null
+      id: lastGridData.id || null,
+      mysteryWordConfig: lastGridData.mysteryWordConfig || { length: 9 }
     };
 
     const modal = document.getElementById("restoreModal");
@@ -1490,7 +1510,6 @@ function discardPreviousSession() {
   pendingSessionData = null;
   openedFromStartup = true; // Provenance du démarrage
   closeRestoreModal();
-  persistSession();
   newGrid();
 }
 
@@ -1549,6 +1568,7 @@ async function loadSelectedGrid(name) {
     openedFromStartup = false; // Grille chargée avec succès
 
     updateGridDisplay();
+    updateMysteryWordDisplay(); // <-- Mettre à jour l'affichage du mot mystère dans la sidebar
 
     if (typeof updateGridGeometry === 'function') {
       updateGridGeometry();
@@ -1570,6 +1590,9 @@ function importJSON(event) {
         COLS = data.cols || 13;
         ROWS = data.rows || 18;
         currentGridName = data.name || file.name.replace(".json", "");
+        if (data.mysteryWordConfig) {
+          mysteryWordConfig = data.mysteryWordConfig; // <--- AJOUTÉ ICI
+        }
       } else if (Array.isArray(data)) {
         cells = data; COLS = 13; ROWS = 18;
         currentGridName = file.name.replace(".json", "");
@@ -1577,6 +1600,7 @@ function importJSON(event) {
       selected = null;
       openedFromStartup = false;
       updateGridDisplay();
+      updateMysteryWordDisplay(); // <--- AJOUTÉ ICI POUR METTRE À JOUR L'AFFICHAGE
     } catch (err) {
       showCustomAlert("Fichier JSON invalide.");
     }
@@ -1900,7 +1924,10 @@ async function applySettings() {
         cols: COLS,
         rows: ROWS,
         version: 2,
-        content: cells
+        content: {
+          cells: cells,
+          mysteryWordConfig: mysteryWordConfig // <-- Ajout ici aussi
+        }
       })
     });
 
@@ -2409,13 +2436,13 @@ function updateMysteryWordDisplay() {
 function toggleCellMystery(isChecked) {
   if (selected === null) return;
   cells[selected].isMystery = isChecked;
-  
+
   if (isChecked) {
     // Trouver la première position libre disponible
     const taken = getTakenMysteryPositions(selected);
     const maxLen = mysteryWordConfig.length || 9;
     let availablePos = 1;
-    
+
     for (let i = 1; i <= maxLen; i++) {
       if (!taken.has(i)) {
         availablePos = i;
@@ -2424,7 +2451,7 @@ function toggleCellMystery(isChecked) {
     }
     cells[selected].mysteryPosition = availablePos;
   }
-  
+
   const posInput = document.getElementById("cellMysteryPosInput");
   if (posInput) {
     posInput.value = cells[selected].mysteryPosition || 1;
@@ -2437,7 +2464,7 @@ function toggleCellMystery(isChecked) {
   updateMysteryWordDisplay();
   render(); // <--- AJOUTEZ CETTE LIGNE ICI
   markAsDirty();
-  persistSession();
+
 }
 
 
@@ -2464,13 +2491,13 @@ function saveMysterySettingsLength(newLength) {
   });
 
   updateMysteryWordDisplay();
-  
+
   const modal = document.getElementById("mysterySettingsModal");
   if (modal) modal.classList.remove("active");
 
   markAsDirty();
-  persistSession();
-  
+
+
   // Mettre à jour le panneau si une case est actuellement sélectionnée
   if (selected !== null) {
     updatePanel();
@@ -2495,7 +2522,7 @@ function updateCellMysteryPosition(posValue) {
   if (selected === null) return;
   let pos = parseInt(posValue, 10);
   if (isNaN(pos) || pos < 1) pos = 1;
-  
+
   const maxLen = mysteryWordConfig.length || 9;
   if (pos > maxLen) {
     pos = maxLen;
@@ -2504,16 +2531,16 @@ function updateCellMysteryPosition(posValue) {
   const takenPositions = getTakenMysteryPositions(selected);
   if (takenPositions.has(pos)) {
     showCustomAlert(`La position ${pos} est déjà utilisée par une autre lettre du mot mystère.`);
-    
+
     const posInput = document.getElementById("cellMysteryPosInput");
     if (posInput) {
       posInput.value = cells[selected].mysteryPosition || 1;
     }
     return;
   }
-  
+
   cells[selected].mysteryPosition = pos;
-  
+
   const posInput = document.getElementById("cellMysteryPosInput");
   if (posInput && parseInt(posInput.value, 10) !== pos) {
     posInput.value = pos;
@@ -2522,7 +2549,9 @@ function updateCellMysteryPosition(posValue) {
   updateMysteryWordDisplay();
   render(); // <--- AJOUTEZ CETTE LIGNE POUR METTRE À JOUR LE BADGE SUR LA GRILLE
   markAsDirty();
-  persistSession();
+
+  renderCellMysteryPositionButtons(pos);
+
 }
 
 function openMysterySettingsModal() {
@@ -2551,11 +2580,65 @@ function applyMysterySettings() {
       mysteryWordConfig.length = newLen;
       updateMysteryWordDisplay();
       markAsDirty();
-      persistSession();
+
     } else {
       showCustomAlert("Veuillez entrer une longueur valide entre 1 et 30.");
       return;
     }
   }
   closeMysterySettingsModal();
+}
+
+// Génère dynamiquement les boutons de position en fonction de la longueur du mot mystère
+function renderCellMysteryPositionButtons(currentPos) {
+  const container = document.getElementById('cellMysteryPosButtonsContainer');
+  if (!container) return;
+  container.innerHTML = ''; // Nettoyer les anciens boutons
+
+  const maxLen = mysteryWordConfig.length || 9;
+  
+  // Récupérer l'ensemble des positions déjà prises par les *autres* cases mystères
+  const takenPositions = getTakenMysteryPositions(selected);
+
+  for (let i = 1; i <= maxLen; i++) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = i;
+    btn.className = 'mystery-pos-btn'; // Vous pouvez styliser via CSS si vous préférez
+
+    const isTaken = takenPositions.has(i);
+    const isCurrent = (i === currentPos);
+
+    // Appliquer le style et l'état selon si la position est prise ou non
+    if (isTaken) {
+      btn.classList.add("not-allowed")
+      btn.style.cursor = 'not-allowed';
+      btn.disabled = true; // Rend le bouton non cliquable/non sélectionnable
+      btn.title = "Cette position est déjà occupée";
+    } else {
+      if (isCurrent) {
+        btn.style.backgroundColor = 'var(--theme-color-strong)'; // Couleur pour la position actuelle (bleu par exemple)
+        btn.style.color = 'white';
+      } else {
+        btn.style.backgroundColor = ''; // Couleur par défaut
+      }
+      
+      // Permettre le clic uniquement si la position n'est pas prise
+      btn.onclick = () => {
+        updateCellMysteryPosition(i);
+      };
+    }
+
+    container.appendChild(btn);
+  }
+}
+
+// Action lorsqu'on clique sur un bouton de position
+function selectCellMysteryPosition(pos) {
+  // Appelle votre logique existante pour enregistrer la position
+  if (typeof updateCellMysteryPosition === 'function') {
+    updateCellMysteryPosition(pos);
+  }
+  // Rafraîchit l'affichage visuel des boutons
+  renderCellMysteryPositionButtons(pos);
 }
