@@ -780,7 +780,7 @@ function renderWordBox(container, labelText, word, indexes, idPrefix, dir) {
 
   const correctBtn = document.createElement("button");
   correctBtn.className = "word-action-btn";
-  correctBtn.innerHTML = `<span class="material-symbols-outlined">spellcheck</span> Corriger l'orthographe`;
+  correctBtn.innerHTML = `<span class="material-symbols-outlined float-r">spellcheck</span> Corriger l'orthographe`;
   correctBtn.onclick = () => fetchSpellCorrection(word, indexes, `${idPrefix}-correct`);
   box.appendChild(correctBtn);
 
@@ -791,7 +791,7 @@ function renderWordBox(container, labelText, word, indexes, idPrefix, dir) {
 
   const sugBtn = document.createElement("button");
   sugBtn.className = "word-action-btn";
-  sugBtn.innerHTML = `<span class="material-symbols-outlined">list_alt</span> Suggérer (Même motif)`;
+  sugBtn.innerHTML = `<span class="material-symbols-outlined float-r">list_alt</span> Suggérer (Même motif)`;
   sugBtn.onclick = () => fetchPatternSuggestions(word, indexes, `${idPrefix}-sug`);
   box.appendChild(sugBtn);
 
@@ -802,7 +802,7 @@ function renderWordBox(container, labelText, word, indexes, idPrefix, dir) {
 
   const defBtn = document.createElement("button");
   defBtn.className = "word-action-btn";
-  defBtn.innerHTML = `<span class="material-symbols-outlined">menu_book</span> Définition (Wiktionnaire)`;
+  defBtn.innerHTML = `<span class="material-symbols-outlined float-r">menu_book</span> Définition (Wiktionnaire)`;
   defBtn.onclick = () => fetchWordDefinition(word, `${idPrefix}-def`);
   box.appendChild(defBtn);
 
@@ -814,7 +814,7 @@ function renderWordBox(container, labelText, word, indexes, idPrefix, dir) {
 
   const synBtn = document.createElement("button");
   synBtn.className = "word-action-btn";
-  synBtn.innerHTML = `<span class="material-symbols-outlined">sync_alt</span> Synonymes`;
+  synBtn.innerHTML = `<span class="material-symbols-outlined float-r">sync_alt</span> Synonymes`;
   synBtn.onclick = () => fetchSynonyms(word, `${idPrefix}-syn`);
   box.appendChild(synBtn);
 
