@@ -413,6 +413,7 @@ function getHighlightedCells() {
     const topIdx = getWordData(selected, topDir).indexes;
     const botIdx = getWordData(selected, botDir).indexes;
     const all = Array.from(new Set([...topIdx, ...botIdx]));
+    console.log("[DEBUG double]", { selected, row: Math.floor(selected / COLS), col: selected % COLS, cellTop: cell.top, cellBottom: cell.bottom, topDir, botDir, topIdx, botIdx, all });
     activeWordTarget = { direction: currentInputDir, indexes: currentInputDir === botDir ? botIdx : topIdx };
     return all;
   }
@@ -434,6 +435,7 @@ function updateHighlights() {
   const highlightedIndexes = getHighlightedCells();
   const combined = Array.from(new Set([...highlightedIndexes, ...hoveredWordIndexes]));
   const { duplicateIndexes } = findDuplicateWords();
+  console.log("[DEBUG updateHighlights]", { selected, highlightedIndexes, combined, gridChildrenCount: grid.children.length });
 
   Array.from(grid.children).forEach((el, idx) => {
     el.classList.toggle("word-highlighted", combined.includes(idx));
@@ -840,6 +842,7 @@ function createDefaultGridCells(cols, rows) {
 
         if (r === 0 && c === 0) {
           cell.bottom.arrow = "E";
+          cell.top.arrow = "S";
         } else if (r === 0) {
           cell.top.arrow = "S";
         } else if (c === 0) {
@@ -2249,8 +2252,8 @@ function showCustomConfirm(message) {
           <h3 style="margin: 0; font-size: 1.25rem; font-weight: 600; color: #1a1a1a;">Confirmation</h3>
           <p id="customConfirmMessage" style="margin: 0; font-size: 0.95rem; color: #4a4a4a; line-height: 1.5;"></p>
           <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px;">
-            <button type="button" id="customConfirmCancelBtn" class="btn-danger" style="padding: 10px 20px; font-weight: 500; cursor: pointer; transition: background-color 0.2s ease;">Annuler</button>
-            <button type="button" id="customConfirmOkBtn" class="btn-primary" style="padding: 10px 20px;font-weight: 500; cursor: pointer; transition: background-color 0.2s ease;">Confirmer</button>
+            <button type="button" id="customConfirmCancelBtn" class="btn-danger" style="padding: 10px 20px; font-weight: 500; cursor: pointer; transition: background-color 0.2s ease;"><span class="material-symbols-outlined float-l" >close</span>Annuler</button>
+            <button type="button" id="customConfirmOkBtn" class="btn-primary" style="padding: 10px 20px;font-weight: 500; cursor: pointer; transition: background-color 0.2s ease;"><span class="material-symbols-outlined float-r">arrow_forward</span>Confirmer</button>
           </div>
         </div>
       `;

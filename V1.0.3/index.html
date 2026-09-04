@@ -65,7 +65,7 @@
           <input type="password" id="loginPassword" required placeholder="••••••••" autocomplete="current-password">
         </div>
         <div id="loginError" class="error-msg"></div>
-        <button type="submit" class="btn-primary login-btn">Se connecter</button>
+        <button type="submit" class="btn-primary login-btn"><span class="material-symbols-outlined float-r">login</span>Se connecter</button>
       </form>
 
       <!-- Formulaire d'Inscription -->
@@ -90,7 +90,8 @@
           <input type="password" id="regPassword" required placeholder="••••••••" autocomplete="new-password">
         </div>
         <div id="registerError" class="error-msg"></div>
-        <button type="submit" class="btn-primary">S'inscrire</button>
+        
+        <button type="submit" class="btn-primary"><span class="material-symbols-outlined float-r">person_add</span>S'inscrire</button>
       </form>
     </div>
   </div>
@@ -206,16 +207,11 @@
           <button class="aside-close-btn" onclick="closeAllSectionModals()" data-tooltip="Fermer">
             <span class="material-symbols-outlined">close</span>
           </button>
-          <h1 class="main-section-tilte">Grille</h1>
+          <div class="grid-title"><h1 class="main-section-tilte">Grille</h1><div id="gridDimensionsDisplay">Grille de 13 colonnes × 18 lignes</div></div>
           <div class="section">
-            <h2>Nom</h2>
             <div id="gridNameDisplay" class="grid-name-display">Ma Grille</div>
           </div>
 
-          <div class="section">
-            <h2>Dimension</h2>
-            <div id="gridDimensionsDisplay">Grille de 13 colonnes × 17 lignes</div>
-          </div>
         </div>
 
 
@@ -248,7 +244,7 @@
             <div id="singleDefControls" style="display:none">
               <label>Définition</label>
               <textarea id="definitionInput" rows="4"
-                style="width:100%;resize:vertical;border:1px solid #bbb;border-radius:5px;padding:7px;text-transform:uppercase;"
+                style="width:100%;resize:vertical;border-radius:5px;padding:7px;text-transform:uppercase;"
                 oninput="updateDefinition(this.value)"></textarea>
 
               <label>Direction de la flèche</label>
@@ -266,7 +262,7 @@
                   style="font-size:18px;">arrow_right_alt</span>
               </div>
               <textarea id="topDefinitionInput" rows="3"
-                style="width:100%;resize:vertical;border:1px solid #bbb;border-radius:5px;padding:7px;text-transform:uppercase;"
+                style="width:100%;resize:vertical;border-radius:5px;padding:7px;text-transform:uppercase;"
                 oninput="updateHalfDefinition('top', this.value)"></textarea>
 
               <label>Direction flèche du haut</label>
@@ -284,7 +280,7 @@
                   style="font-size:18px;">south</span>
               </div>
               <textarea id="bottomDefinitionInput" rows="3"
-                style="width:100%;resize:vertical;border:1px solid #bbb;border-radius:5px;padding:7px;text-transform:uppercase;"
+                style="width:100%;resize:vertical;border-radius:5px;padding:7px;text-transform:uppercase;"
                 oninput="updateHalfDefinition('bottom', this.value)"></textarea>
 
               <label>Direction flèche du bas</label>
@@ -402,7 +398,10 @@
           <input type="number" id="settingRows" min="5" max="50">
         </div>
         <div style="margin-top: 16px; text-align: right;">
-          <button class="btn-primary" onclick="applySettings()">Valider</button>
+          <button class="btn-primary" onclick="applySettings()">
+            <span class="material-symbols-outlined float-r">arrow_forward</span>
+            Valider
+          </button>
         </div>
       </div>
     </div>
@@ -438,6 +437,7 @@
         <div>
           <button type="button" class="btn-danger" style=" width: 100%;"
             onclick="handleLogout(); closeUserModal();">
+            <span class="material-symbols-outlined float-l" >logout</span>
             Se déconnecter
           </button>
         </div>
@@ -480,9 +480,13 @@
         </p>
         <div style="display: flex; justify-content: center; gap: 12px;">
           <button type="button" class="btn-primary" style="background: #ccc; color: #333;"
-            onclick="closeClearModal()">Annuler</button>
+            onclick="closeClearModal()">
+            <span class="material-symbols-outlined float-l" >close</span>
+            Annuler</button>
           <button type="button" class="btn-primary" style="background: #e53935;"
-            onclick="executeClearGrid()">Confirmer</button>
+            onclick="executeClearGrid()">
+            <span class="material-symbols-outlined float-r">arrow_forward</span>
+            Confirmer</button>
         </div>
       </div>
     </div>

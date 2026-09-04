@@ -264,6 +264,9 @@ body {
     flex-direction: column;
     align-items: center;
     text-align: center;
+    border-bottom: solid 1px rgba(0, 0, 0, 0.8);
+    padding-bottom: 15px;
+    margin-bottom: 25px !important;
 }
 
 .user-menu-container {
@@ -529,6 +532,13 @@ html.dark-theme {
 
 #gridDimensionsDisplay {
     font-size: small;
+    width: 100%;
+    text-align: right;
+    /* display: flex; */
+    /* flex-direction: column; */
+    /* justify-content: center; */
+    top: 5px;
+    position: relative;
 }
 
 .icon-btn {
@@ -861,9 +871,9 @@ main {
 .word-group-title {
     font-size: 11px;
     font-weight: bold;
-    color: #1166dd;
+    color: var(--theme-color-strong);
     text-transform: uppercase;
-    border-bottom: 1px solid #70a5ff;
+    border-bottom: var(--theme-color-strong) solid 1px;
     padding-bottom: 2px;
     margin-bottom: 2px;
 }
@@ -893,9 +903,9 @@ main {
 }
 
 .word-item.is-duplicate {
-    background: #ffebee !important;
-    border-color: #f44336 !important;
-    color: #c62828 !important;
+    background: var(--danger-color-light) !important;
+    border-color: var(--danger-color-strong) !important;
+    color: var(--danger-color-strong) !important;
 }
 
 /* ===================================================================== */
@@ -971,8 +981,14 @@ main {
 
 .cell.word-duplicate,
 .cell.word-highlighted.word-duplicate {
-    background-color: #ffcdd2 !important;
+    background-color: var(--danger-color-light) !important;
 }
+
+.cell.word-duplicate,
+.word-duplicate input{
+    color: var(--danger-color-strong)!important;
+}
+
 
 .letter-cell {
     display: flex;
@@ -998,7 +1014,7 @@ main {
 }
 
 .definition-cell {
-    background: var(--theme-color-strong);
+    background: var(--theme-color-light);
     padding: 2px;
     display: flex;
     align-items: center;
@@ -1463,8 +1479,12 @@ label {
     padding: 8px;
     border-radius: 5px;
     font-size: 14px;
+    border: solid 1px var(--theme-color-medium);
 }
 
+textarea {
+    border: solid 1px var(--theme-color-medium);
+}
 /* ===================================================================== */
 /* 8. BOUTONS                                                            */
 /* ===================================================================== */
@@ -1607,7 +1627,7 @@ label {
 .grid-item-delete {
     background: transparent;
     border: none;
-    color: #999;
+    color: var(--theme-color-strong);
     cursor: pointer;
     padding: 4px;
     border-radius: 4px;
@@ -1615,7 +1635,12 @@ label {
     align-items: center;
 }
 
-.grid-item-delete:hover {
+.grid-item-row:hover .grid-item-delete {
+    color: white;
+    
+}
+
+.grid-item-row:hover .grid-item-delete:hover {
     color: #d32f2f;
     background: #ffebee;
 }
@@ -1719,3 +1744,27 @@ label {
 
 
 
+
+
+
+.grid-title {
+    display: flex;
+    border-bottom: solid 1px;
+    margin-bottom: 10px;
+    padding-bottom: 0px;
+}
+
+.grid-title h1{
+    border-bottom: none;
+    margin-bottom: none;
+}
+
+
+
+.float-r{
+    float: right;
+}
+
+.float-l{
+    float: left;
+}
