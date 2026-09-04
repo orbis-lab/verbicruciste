@@ -672,6 +672,8 @@ main {
     margin-bottom: 15px;
 }
 
+
+
 .main-section-tilte {
     margin: 0px;
     font-size: 20px;
@@ -679,6 +681,20 @@ main {
     border-bottom: solid 1px rgba(0, 0, 0, 0.8);
     margin-bottom: 10px;
     padding-bottom: 10px;
+    display: flex;
+  align-items: center; /* Centre verticalement les éléments enfants */
+  gap: 8px;
+}
+
+
+
+
+.left .main-section-icon {
+    margin-right: 10px;
+}
+
+.right .main-section-icon {
+    margin-left: 10px;
 }
 
 @media (min-width: 1100px) {
@@ -994,6 +1010,27 @@ main {
     display: flex;
     align-items: center;
     justify-content: center;
+     position: relative;
+}
+
+
+/* Style et position fixe du petit badge carré dans le coin en haut à gauche */
+.mystery-badge-corner {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background-color: #2563eb; /* Couleur de fond (ajustable selon votre thème) */
+  color: #ffffff;            /* Couleur du texte (numéro de position) */
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;        /* Forme légèrement arrondie pour faire un carré propre */
+  pointer-events: none;      /* Empêche le badge de bloquer les clics sur l'input */
+  z-index: 2;                /* S'affiche par-dessus l'input */
 }
 
 .letter-cell input {
@@ -1338,6 +1375,7 @@ label {
     color: #111;
     word-break: break-all;
 }
+
 
 .word-action-btn {
     margin-top: 8px;
@@ -1766,4 +1804,59 @@ textarea {
 
 .float-l{
     float: left;
+}
+
+/* ===================================================================== */
+/* MOT MYSTÈRE                                                           */
+/* ===================================================================== */
+
+.mystery-word-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.mystery-word-display {
+    direction: ltr;
+    font-size: 20px;
+    font-weight: bold;
+    letter-spacing: 3px;
+    color: #111;
+    word-break: break-all;   
+    border-radius: 6px;
+    padding: 10px;
+    margin-top: 10px;
+    text-align: center;
+}
+
+.mystery-switch-group {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+}
+
+.mystery-position-input-group {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mystery-position-input-group input {
+    width: 70px;
+    padding: 4px 8px;
+    font-size: 13px;
+    text-align: center;
+    border: 1px solid var(--theme-color-strong);
+    border-radius: 4px;
+}
+
+
+
+mystery-setting-icon{
+    font-size: 20px;
+    color: rgba(0, 0, 0, 0.5);
 }

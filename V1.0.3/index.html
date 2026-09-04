@@ -65,7 +65,8 @@
           <input type="password" id="loginPassword" required placeholder="••••••••" autocomplete="current-password">
         </div>
         <div id="loginError" class="error-msg"></div>
-        <button type="submit" class="btn-primary login-btn"><span class="material-symbols-outlined float-r">login</span>Se connecter</button>
+        <button type="submit" class="btn-primary login-btn"><span
+            class="material-symbols-outlined float-r">login</span>Se connecter</button>
       </form>
 
       <!-- Formulaire d'Inscription -->
@@ -90,8 +91,9 @@
           <input type="password" id="regPassword" required placeholder="••••••••" autocomplete="new-password">
         </div>
         <div id="registerError" class="error-msg"></div>
-        
-        <button type="submit" class="btn-primary"><span class="material-symbols-outlined float-r">person_add</span>S'inscrire</button>
+
+        <button type="submit" class="btn-primary"><span
+            class="material-symbols-outlined float-r">person_add</span>S'inscrire</button>
       </form>
     </div>
   </div>
@@ -202,14 +204,19 @@
     <aside class="left">
       <div class="inner-aside">
 
-        
+
         <div class="main-section" id="grilleMainSection">
           <button class="aside-close-btn" onclick="closeAllSectionModals()" data-tooltip="Fermer">
             <span class="material-symbols-outlined">close</span>
           </button>
-          <div class="grid-title"><h1 class="main-section-tilte">Grille</h1><div id="gridDimensionsDisplay">Grille de 13 colonnes × 18 lignes</div></div>
+
+          <h1 class="main-section-tilte">
+            <span class="material-symbols-outlined main-section-icon">grid_on</span>Grille
+          </h1>
+
           <div class="section">
             <div id="gridNameDisplay" class="grid-name-display">Ma Grille</div>
+            <div id="gridDimensionsDisplay">Grille de 13 colonnes × 18 lignes</div>
           </div>
 
         </div>
@@ -219,7 +226,9 @@
           <button class="aside-close-btn" onclick="closeAllSectionModals()" data-tooltip="Fermer">
             <span class="material-symbols-outlined">close</span>
           </button>
-          <h1 class="main-section-tilte">Sélection</h1>
+          <h1 class="main-section-tilte">
+            <span class="material-symbols-outlined main-section-icon">ink_selection</span>Sélection
+          </h1>
           <div class="section">
             <h2>Type</h2>
             <div class="type-buttons">
@@ -238,7 +247,18 @@
           <div class="section">
             <h2>Options</h2>
             <div id="selectedInfo" class="info">Cliquez sur une case de la grille.</div>
-
+<!-- Options de la case mystère -->
+<div id="mysteryCellOptionsContainer" class="section-group" style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
+  <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-size: 14px;">
+    <span>Case mot mystère</span>
+    <input type="checkbox" id="cellIsMysterySwitch" onchange="toggleCellMystery(this.checked)" />
+  </label>
+  
+  <div style="margin-top: 8px; display: flex; align-items: center; justify-content: space-between;">
+    <span style="font-size: 13px; color: #666;">Position dans le mot :</span>
+    <input type="number" id="cellMysteryPosInput" min="1" max="30" style="width: 60px; padding: 4px;" onchange="updateCellMysteryPosition(this.value)" />
+  </div>
+</div>
             <div id="wordFormedContainer"></div>
 
             <div id="singleDefControls" style="display:none">
@@ -324,12 +344,46 @@
 
     <aside class="right">
       <div class="inner-aside">
+
+        <div class="main-section" id="MysteryWord">
+          <button class="aside-close-btn" onclick="closeAllSectionModals()" data-tooltip="Fermer">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+          <h1 class="main-section-tilte">
+            <span class="material-symbols-outlined main-section-icon">mystery</span>
+            Mot mystère
+            <button class="icon-btn float-r mystery-setting-icon" id="openMysterySettingsBtn" data-tooltip="Paramétrer le mot mystère" onclick="openMysterySettingsModal()">
+            <span class="material-symbols-outlined">settings</span>
+        </button>
+          </h1>
+          <div class="section">
+            <div class="mystery-word-display" id="mysteryWordDisplay">_ _ _ _ _ _ _ _ _</div>
+          </div>
+
+        </div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+
+
         <div class="main-section" id="wordsMainSection">
           <button class="aside-close-btn" onclick="closeAllSectionModals()" data-tooltip="Fermer">
             <span class="material-symbols-outlined">close</span>
           </button>
           <div class="words-sidebar">
-            <h1 class="main-section-tilte">Mots placés</h1>
+            <h1 class="main-section-tilte">
+              <span class="material-symbols-outlined main-section-icon">list_alt</span>Mots placés
+            </h1>
             <div id="wordsCount" class="count-info">0 mot trouvé</div>
             <div id="wordsList" class="words-list"></div>
           </div>
@@ -435,9 +489,8 @@
         </div>
         <div style="height: 1px; background: #eee; margin: 16px 0;"></div>
         <div>
-          <button type="button" class="btn-danger" style=" width: 100%;"
-            onclick="handleLogout(); closeUserModal();">
-            <span class="material-symbols-outlined float-l" >logout</span>
+          <button type="button" class="btn-danger" style=" width: 100%;" onclick="handleLogout(); closeUserModal();">
+            <span class="material-symbols-outlined float-l">logout</span>
             Se déconnecter
           </button>
         </div>
@@ -479,12 +532,10 @@
           Êtes-vous sûr de vouloir vider toute la grille ? Cette action est irréversible.
         </p>
         <div style="display: flex; justify-content: center; gap: 12px;">
-          <button type="button" class="btn-primary" style="background: #ccc; color: #333;"
-            onclick="closeClearModal()">
-            <span class="material-symbols-outlined float-l" >close</span>
+          <button type="button" class="btn-primary" style="background: #ccc; color: #333;" onclick="closeClearModal()">
+            <span class="material-symbols-outlined float-l">close</span>
             Annuler</button>
-          <button type="button" class="btn-primary" style="background: #e53935;"
-            onclick="executeClearGrid()">
+          <button type="button" class="btn-primary" style="background: #e53935;" onclick="executeClearGrid()">
             <span class="material-symbols-outlined float-r">arrow_forward</span>
             Confirmer</button>
         </div>
@@ -536,6 +587,29 @@
           <button class="btn-save-choice" onclick="discardPreviousSession()">
             <span class="material-symbols-outlined">add_box</span>
             Nouvelle grille
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Modal Paramètres du Mot Mystère -->
+  <div id="mysterySettingsModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Paramètres du mot mystère</h3>
+        <button class="modal-close" onclick="closeMysterySettingsModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Longueur du mot mystère</label>
+          <input type="number" id="settingMysteryLength" min="1" max="30" value="9">
+        </div>
+        <div style="margin-top: 16px; text-align: right;">
+          <button class="btn-primary" onclick="applyMysterySettings()">
+            <span class="material-symbols-outlined float-r">arrow_forward</span>
+            Valider
           </button>
         </div>
       </div>

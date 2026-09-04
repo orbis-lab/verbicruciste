@@ -41,6 +41,11 @@ let openSectionId = null;
 let hasUnsavedChanges = false;
 let openedFromStartup = false; // Indique si le modal secondaire vient du démarrage
 
+let mysteryWordConfig = {
+  length: 9,
+  // Stocke la correspondance : { cellIndex: positionIndex } ou persistance liée aux cases
+};
+
 
 /* ===================================================================== */
 /* 2. INITIALISATION ET CYCLE DE VIE                                     */
@@ -287,11 +292,14 @@ function zoomOut() {
 /* 4. SELECTION, ANALYSE DE MOTS ET NAVIGATION                          */
 /* ===================================================================== */
 
+
 function emptyCell() {
   return {
     type: "letter", letter: "", definition: "", arrow: "E",
     top: { definition: "", arrow: "E" },
-    bottom: { definition: "", arrow: "S" }
+    bottom: { definition: "", arrow: "S" },
+    isMystery: false,
+    mysteryPosition: 1
   };
 }
 
@@ -499,6 +507,15 @@ function render() {
       input.value = cell.letter || "";
       input.setAttribute("autocomplete", "off");
 
+      // ---> AJOUTER CE BLOC POUR LE BADGE MYSTÈRE <---
+      if (cell.isMystery && cell.mysteryPosition) {
+        const badgeEl = document.createElement("span");
+        badgeEl.className = "mystery-badge-corner";
+        badgeEl.textContent = cell.mysteryPosition;
+        el.appendChild(badgeEl);
+      }
+      // -----------------------------------------------
+
       input.addEventListener("click", () => {
         selectCellSilently(index);
         input.focus();
@@ -531,6 +548,7 @@ function render() {
           updatePanel();
           updatePlacedWordsList();
           markAsDirty()
+          updateMysteryWordDisplay()
           persistSession();
           moveToNextLetter(1);
         }
@@ -590,6 +608,7 @@ function render() {
   updatePanel();
   updatePlacedWordsList();
   markAsDirty();
+  updateMysteryWordDisplay()
   persistSession();
 }
 
@@ -696,6 +715,25 @@ function updatePanel() {
   if (cell.type === "letter") {
     const parent = findParentWordForLetter(selected, currentInputDir);
     if (parent) renderWordBox(wordContainer, "Mot associé", parent.data.word, parent.data.indexes, "word-letter", parent.dir);
+  }
+
+
+// Gestion de l'affichage du bloc switch case mystère dans updatePanel()
+  const mysteryOptionsContainer = document.getElementById("mysteryCellOptionsContainer");
+  const mysterySwitch = document.getElementById("cellIsMysterySwitch");
+  const mysteryPosInput = document.getElementById("cellMysteryPosInput");
+
+if (cell.type === "letter") {
+    if (mysteryOptionsContainer) mysteryOptionsContainer.style.display = "block";
+    if (mysterySwitch) mysterySwitch.checked = !!cell.isMystery;
+    if (mysteryPosInput) {
+      mysteryPosInput.value = cell.mysteryPosition || 1;
+      mysteryPosInput.disabled = !cell.isMystery;
+      mysteryPosInput.max = mysteryWordConfig.length || 9; // <-- Ajout de la limite max HTML
+      mysteryPosInput.min = 1;
+    }
+  } else {
+    if (mysteryOptionsContainer) mysteryOptionsContainer.style.display = "none";
   }
 }
 
@@ -1313,6 +1351,8 @@ function saveGridToCloud(gridData) {
     content: gridData.cells || cells
   };
 
+  payload.content.mysteryWordConfig = mysteryWordConfig
+
   const method = currentGridId ? 'PUT' : 'POST';
   const url = currentGridId ? `./api/grids/${currentGridId}` : './api/grids';
 
@@ -1423,6 +1463,11 @@ function restorePreviousSession() {
     cells = pendingSessionData.cells;
     currentGridName = pendingSessionData.name || "Ma Grille";
     currentGridId = pendingSessionData.id || null;
+
+    if (pendingSessionData.mysteryWordConfig) {
+      mysteryWordConfig = pendingSessionData.mysteryWordConfig;
+    }
+
   }
   sessionRestorePending = false;
   pendingSessionData = null;
@@ -1493,6 +1538,10 @@ async function loadSelectedGrid(name) {
       ROWS = data.rows;
       cells = data.cells;
       currentGridId = data.id || null;
+
+      if (data.mysteryWordConfig) {
+        mysteryWordConfig = data.mysteryWordConfig;
+      }
     }
 
     currentGridName = name;
@@ -1980,7 +2029,7 @@ async function openLoadModal() {
     names.forEach(name => {
       const gridInfo = savedGrids[name];
       const gridId = gridInfo.id || null;
-      
+
       const isOpen = (name === currentGridName) || (gridId && currentGridId && gridId === currentGridId);
 
       const row = document.createElement("div");
@@ -1994,7 +2043,7 @@ async function openLoadModal() {
       nameSpan.textContent = name;
 
       if (isOpen) {
-        
+
         nameSpan.style.pointerEvents = "none";
         nameSpan.title = "Grille actuellement ouverte";
 
@@ -2107,7 +2156,7 @@ function openUserModal() {
       let initials = "";
       if (firstName) initials += firstName.charAt(0);
       if (lastName) initials += lastName.charAt(0);
-      
+
       if (!initials && USER.email) {
         initials = USER.email.charAt(0);
       }
@@ -2116,7 +2165,7 @@ function openUserModal() {
 
       // 2. Attribution d'une couleur de fond stable basée sur le nom ou l'email
       const colors = [
-        '#1976d2', '#d32f2f', '#388e3c', '#f57c00', 
+        '#1976d2', '#d32f2f', '#388e3c', '#f57c00',
         '#7b1fa1', '#0097a7', '#c2185b', '#5d4037'
       ];
       let hash = 0;
@@ -2270,7 +2319,7 @@ function showCustomConfirm(message) {
     okBtn.parentNode.replaceChild(newOkBtn, okBtn);
     cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
 
- 
+
 
     newOkBtn.addEventListener('click', () => {
       closeCustomConfirm();
@@ -2333,4 +2382,180 @@ function markAsClean() {
     hasUnsavedChanges = false;
     updateSaveBadge();
   }
+}
+
+
+function updateMysteryWordDisplay() {
+  const displayEl = document.getElementById("mysteryWordDisplay");
+  if (!displayEl) return;
+
+  const len = mysteryWordConfig.length || 9;
+  let wordArr = Array(len).fill("_");
+
+  // Parcourir toutes les cellules pour trouver celles qui sont des cases mystères
+  cells.forEach((cell) => {
+    if (cell.isMystery && cell.mysteryPosition) {
+      const pos = parseInt(cell.mysteryPosition, 10) - 1;
+      if (pos >= 0 && pos < len) {
+        const letter = cell.letter ? cell.letter.toUpperCase() : "_";
+        wordArr[pos] = letter !== "" ? letter : "_";
+      }
+    }
+  });
+
+  displayEl.textContent = wordArr.join(" ");
+}
+
+function toggleCellMystery(isChecked) {
+  if (selected === null) return;
+  cells[selected].isMystery = isChecked;
+  
+  if (isChecked) {
+    // Trouver la première position libre disponible
+    const taken = getTakenMysteryPositions(selected);
+    const maxLen = mysteryWordConfig.length || 9;
+    let availablePos = 1;
+    
+    for (let i = 1; i <= maxLen; i++) {
+      if (!taken.has(i)) {
+        availablePos = i;
+        break;
+      }
+    }
+    cells[selected].mysteryPosition = availablePos;
+  }
+  
+  const posInput = document.getElementById("cellMysteryPosInput");
+  if (posInput) {
+    posInput.value = cells[selected].mysteryPosition || 1;
+    posInput.disabled = !isChecked;
+    posInput.max = mysteryWordConfig.length || 9;
+    posInput.min = 1;
+  }
+
+  updatePanel();
+  updateMysteryWordDisplay();
+  render(); // <--- AJOUTEZ CETTE LIGNE ICI
+  markAsDirty();
+  persistSession();
+}
+
+
+function openMysterySettingsModal() {
+  // Ouvre votre modale de paramétrage (ou crée une modale dynamique)
+  const modal = document.getElementById("mysterySettingsModal");
+  const lengthInput = document.getElementById("mysteryLengthInput");
+  if (lengthInput) lengthInput.value = mysteryWordConfig.length;
+  if (modal) modal.classList.add("active");
+}
+
+function saveMysterySettingsLength(newLength) {
+  let len = parseInt(newLength, 10);
+  if (isNaN(len) || len < 1) len = 1;
+  if (len > 30) len = 30;
+
+  mysteryWordConfig.length = len;
+
+  // Optionnel : s'assurer qu'aucune case mystère ne dépasse la nouvelle longueur
+  cells.forEach((cell) => {
+    if (cell.isMystery && cell.mysteryPosition > len) {
+      cell.mysteryPosition = len;
+    }
+  });
+
+  updateMysteryWordDisplay();
+  
+  const modal = document.getElementById("mysterySettingsModal");
+  if (modal) modal.classList.remove("active");
+
+  markAsDirty();
+  persistSession();
+  
+  // Mettre à jour le panneau si une case est actuellement sélectionnée
+  if (selected !== null) {
+    updatePanel();
+  }
+}
+
+// ===================================================================== */
+// GESTION DES CASES MYSTÈRES (À ajouter si absent)                      */
+// ===================================================================== */
+
+function getTakenMysteryPositions(excludeIndex) {
+  const taken = new Set();
+  cells.forEach((cell, idx) => {
+    if (cell.isMystery && cell.mysteryPosition && idx !== excludeIndex) {
+      taken.add(parseInt(cell.mysteryPosition, 10));
+    }
+  });
+  return taken;
+}
+
+function updateCellMysteryPosition(posValue) {
+  if (selected === null) return;
+  let pos = parseInt(posValue, 10);
+  if (isNaN(pos) || pos < 1) pos = 1;
+  
+  const maxLen = mysteryWordConfig.length || 9;
+  if (pos > maxLen) {
+    pos = maxLen;
+  }
+
+  const takenPositions = getTakenMysteryPositions(selected);
+  if (takenPositions.has(pos)) {
+    showCustomAlert(`La position ${pos} est déjà utilisée par une autre lettre du mot mystère.`);
+    
+    const posInput = document.getElementById("cellMysteryPosInput");
+    if (posInput) {
+      posInput.value = cells[selected].mysteryPosition || 1;
+    }
+    return;
+  }
+  
+  cells[selected].mysteryPosition = pos;
+  
+  const posInput = document.getElementById("cellMysteryPosInput");
+  if (posInput && parseInt(posInput.value, 10) !== pos) {
+    posInput.value = pos;
+  }
+
+  updateMysteryWordDisplay();
+  render(); // <--- AJOUTEZ CETTE LIGNE POUR METTRE À JOUR LE BADGE SUR LA GRILLE
+  markAsDirty();
+  persistSession();
+}
+
+function openMysterySettingsModal() {
+  const input = document.getElementById('settingMysteryLength');
+  if (input) {
+    input.value = mysteryWordConfig.length || 9;
+  }
+  const modal = document.getElementById('mysterySettingsModal');
+  if (modal) {
+    modal.classList.add('active');
+  }
+}
+
+function closeMysterySettingsModal() {
+  const modal = document.getElementById('mysterySettingsModal');
+  if (modal) {
+    modal.classList.remove('active');
+  }
+}
+
+function applyMysterySettings() {
+  const input = document.getElementById('settingMysteryLength');
+  if (input) {
+    const newLen = parseInt(input.value, 10);
+    if (newLen >= 1 && newLen <= 30) {
+      mysteryWordConfig.length = newLen;
+      updateMysteryWordDisplay();
+      markAsDirty();
+      persistSession();
+    } else {
+      showCustomAlert("Veuillez entrer une longueur valide entre 1 et 30.");
+      return;
+    }
+  }
+  closeMysterySettingsModal();
 }
