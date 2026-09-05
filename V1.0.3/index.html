@@ -186,10 +186,10 @@
       <span class="material-symbols-outlined">tune</span>
       <span>Sélection</span>
     </button>
-    <button class="mobile-nav-btn" onclick="openSectionModal('grilleMainSection')">
+    <!-- <button class="mobile-nav-btn" onclick="openSectionModal('grilleMainSection')">
       <span class="material-symbols-outlined">grid_on</span>
       <span>Grille</span>
-    </button>
+    </button> -->
     <button class="mobile-nav-btn" onclick="openSectionModal('wordsMainSection')">
       <span class="material-symbols-outlined">format_list_bulleted</span>
       <span>Mots</span>
@@ -209,30 +209,20 @@
       <div class="inner-aside">
 
 
-        <div class="main-section" id="grilleMainSection">
-          <button class="aside-close-btn" onclick="closeAllSectionModals()" data-tooltip="Fermer">
-            <span class="material-symbols-outlined">close</span>
-          </button>
 
-          <h1 class="main-section-tilte">
-            <span class="material-symbols-outlined main-section-icon">grid_on</span>Grille
-          </h1>
-
-          <div class="section">
-            <div id="gridNameDisplay" class="grid-name-display">Ma Grille</div>
-            <div id="gridDimensionsDisplay">Grille de 13 colonnes × 18 lignes</div>
-          </div>
-
-        </div>
 
 
         <div class="main-section" id="selectionMainSection">
           <button class="aside-close-btn" onclick="closeAllSectionModals()" data-tooltip="Fermer">
             <span class="material-symbols-outlined">close</span>
           </button>
+
+          <div class="card-header">
           <h1 class="main-section-tilte">
             <span class="material-symbols-outlined main-section-icon">ink_selection</span>Sélection
           </h1>
+
+          </div>
           <div class="section">
             <h2>Type</h2>
             <div class="type-buttons">
@@ -250,20 +240,19 @@
 
           </h1>
           <div class="section">
-            <h2>Case "Mot mystère"</h2>
-            <!-- Options de la case mystère -->
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <h2 style="margin: 0;">Case "Mot mystère"</h2>
+              <label class="toggle-switch" style="margin: 0;">
+                <input type="checkbox" id="cellIsMysterySwitch" onchange="toggleCellMystery(this.checked)" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            
+            <!-- Options de la case mystère (affichées conditionnellement) -->
             <div id="mysteryCellOptionsContainer" class="section-group"
-              style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
-              <div style="display: flex; align-items: center; justify-content: space-between; font-size: 14px;">
-
-                <label class="toggle-switch">
-                  <input type="checkbox" id="cellIsMysterySwitch" onchange="toggleCellMystery(this.checked)" />
-                  <span class="toggle-slider"></span>
-                </label>
-              </div>
-
-              <div style="margin-top: 10px;">
-                <span style="font-size: 13px; color: #666; display: block; margin-bottom: 6px;">Position dans le mot
+              style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px; display: none;">
+              <div>
+                <span id="mysteryPositionLabel" style="font-size: 13px; color: #666; display: block; margin-bottom: 6px;">Position dans le mot
                   :</span>
                 <div id="cellMysteryPosButtonsContainer" class="mystery-pos-buttons-container"></div>
               </div>
@@ -335,6 +324,20 @@
     </aside>
 
     <main class="editor">
+
+      <div class="main-section" id="grilleMainSection">
+
+        <div class="card-header">
+          <h1 class="main-section-tilte">
+            <span class="material-symbols-outlined main-section-icon">grid_on</span>
+            Grille
+          </h1>
+          <div id="gridNameDisplay" class="grid-name-display">Ma Grille</div>
+          <div id="gridDimensionsDisplay">13C × 18L</div>
+
+        </div>
+
+      </div>
       <img src="./media/banner.svg" alt="Logo" class="print-banner" />
       <div id="printTitle" class="print-title">Ma Grille</div>
       <div id="grid" class="grid"></div>
@@ -364,14 +367,17 @@
           <button class="aside-close-btn" onclick="closeAllSectionModals()" data-tooltip="Fermer">
             <span class="material-symbols-outlined">close</span>
           </button>
-          <h1 class="main-section-tilte">
-            <span class="material-symbols-outlined main-section-icon">mystery</span>
-            Mot mystère
-            <button class="icon-btn float-r " id="openMysterySettingsBtn" data-tooltip="Paramétrer le mot mystère"
-              onclick="openMysterySettingsModal()">
-              <span class="material-symbols-outlined mystery-setting-icon">instant_mix</span>
-            </button>
-          </h1>
+
+          <div class="card-header">
+            <h1 class="main-section-tilte">
+              <span class="material-symbols-outlined main-section-icon">mystery</span>
+              Mot mystère
+              <button class="icon-btn float-r " id="openMysterySettingsBtn" data-tooltip="Paramétrer le mot mystère"
+                onclick="openMysterySettingsModal()">
+                <span class="material-symbols-outlined mystery-setting-icon">instant_mix</span>
+              </button>
+            </h1>
+          </div>
           <div class="section">
             <div class="mystery-word-display" id="mysteryWordDisplay">_ _ _ _ _ _ _ _ _</div>
           </div>
@@ -396,10 +402,14 @@
           <button class="aside-close-btn" onclick="closeAllSectionModals()" data-tooltip="Fermer">
             <span class="material-symbols-outlined">close</span>
           </button>
-          <div class="words-sidebar">
+
+
+          <div class="words-sidebar ">
+            <div class="card-header">
             <h1 class="main-section-tilte">
               <span class="material-symbols-outlined main-section-icon">list_alt</span>Mots placés
             </h1>
+            </div>
             <div id="wordsCount" class="count-info">0 mot trouvé</div>
             <div id="wordsList" class="words-list"></div>
           </div>
@@ -491,7 +501,7 @@
         <div class="form-group id-card" style="margin-bottom: 12px;">
           <!-- Ajout de l'avatar utilisateur -->
           <div id="userAvatarDisplay"
-            style="width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 500; color: #ffffff; margin-bottom: 16px; background-color: #1976d2;">
+            class="avatar">
 
           </div>
           <label>Nom d'utilisateur</label>

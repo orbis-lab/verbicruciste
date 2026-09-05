@@ -2,9 +2,9 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="146.51936mm"
-   height="153.88799mm"
-   viewBox="0 0 146.51936 153.88799"
+   width="163.31937mm"
+   height="170.68799mm"
+   viewBox="0 0 163.31936 170.68799"
    version="1.1"
    id="svg1"
    inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
@@ -23,9 +23,9 @@
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
-     inkscape:zoom="0.73851712"
-     inkscape:cx="62.964011"
-     inkscape:cy="592.40333"
+     inkscape:zoom="0.52221046"
+     inkscape:cx="-66.065317"
+     inkscape:cy="167.55696"
      inkscape:window-width="1920"
      inkscape:window-height="1009"
      inkscape:window-x="-8"
@@ -38,19 +38,23 @@
      inkscape:label="Calque 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(-88.37082,8.2020796)">
+     transform="translate(-79.970835,16.602082)">
     <g
        id="g4"
        transform="translate(-246.80336,-154.21342)">
-      <path
-         style="fill:#000000;stroke:#000000;stroke-width:4.99999;stroke-linecap:round;stroke-linejoin:round"
-         d="M 377.42693,179.88926 479.1938,238.64439 377.42693,297.39952 V 179.88926"
-         id="path2-1-23"
-         sodipodi:nodetypes="cccc" />
-      <path
-         style="fill:none;stroke:#000000;stroke-width:16.8;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
-         d="M 377.42693,238.64439 H 343.57418 V 154.41134"
-         id="path2" />
+      <g
+         id="g1"
+         transform="translate(-8.3999854,-8.4000024)">
+        <path
+           style="fill:#000000;stroke:#000000;stroke-width:4.99999;stroke-linecap:round;stroke-linejoin:round"
+           d="M 377.42693,179.88926 479.1938,238.64439 377.42693,297.39952 V 179.88926"
+           id="path2-1-23"
+           sodipodi:nodetypes="cccc" />
+        <path
+           style="fill:none;stroke:#000000;stroke-width:16.8;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+           d="M 377.42693,238.64439 H 343.57418 V 154.41134"
+           id="path2" />
+      </g>
     </g>
   </g>
 </svg>

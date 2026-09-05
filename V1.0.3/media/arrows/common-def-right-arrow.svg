@@ -2,13 +2,13 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="146.51936mm"
-   height="122.51007mm"
-   viewBox="0 0 146.51936 122.51007"
+   width="163.31937mm"
+   height="170.68799mm"
+   viewBox="0 0 163.31936 170.68798"
    version="1.1"
    id="svg1"
    inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
-   sodipodi:docname="right-arrow.svg"
+   sodipodi:docname="common-def-right-arrow.svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -24,8 +24,8 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
      inkscape:zoom="0.73851712"
-     inkscape:cx="276.90624"
-     inkscape:cy="230.86804"
+     inkscape:cx="169.93513"
+     inkscape:cy="392.00175"
      inkscape:window-width="1920"
      inkscape:window-height="1009"
      inkscape:window-x="-8"
@@ -38,10 +38,10 @@
      inkscape:label="Calque 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(-32.014583,-87.3125)">
+     transform="translate(-60.589571,-130.175)">
     <g
        id="g2"
-       transform="translate(7.8784113,73.402179)">
+       transform="translate(36.4534,140.35364)">
       <path
          style="fill:#000000;stroke:#000000;stroke-width:4.99999;stroke-linecap:round;stroke-linejoin:round"
          d="M 66.388921,16.410316 168.15579,75.165446 66.388921,133.92058 V 16.410316"

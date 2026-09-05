@@ -15,6 +15,11 @@ let selected = null;
 let activeWordTarget = null;
 let hoveredWordIndexes = [];
 let currentInputDir = "E";
+// Pour une case de double définition : quelle moitié ("top" ou "bottom") est
+// actuellement active, indépendamment de la direction de sa flèche. Permet
+// de savoir quel mot sélectionner même quand haut et bas pointent dans la
+// même direction, ou dans une direction différente de l'ancien standard.
+let currentDoubleHalf = null;
 
 const DIR_OFFSETS = {
   S: { r: 1, c: 0 },
@@ -22,6 +27,11 @@ const DIR_OFFSETS = {
 };
 
 let panzoomInstance = null;
+// Facteur appliqué à l'échelle calculée automatiquement au chargement (et au
+// clic sur "Zoom initial") : 1 = ajustement exact à l'espace disponible,
+// une valeur légèrement inférieure (ex: 0.95) laisse un peu de marge visuelle
+// en dézoomant très légèrement la grille par rapport à l'ajustement parfait.
+const AUTO_FIT_ZOOM_FACTOR = 0.93;
 let scale = 0.8;
 let pointX = 50;
 let pointY = 40;
@@ -244,14 +254,24 @@ function updateGridGeometry() {
   const gridPixelWidth = COLS * computedCellSize;
   const gridPixelHeight = ROWS * computedCellSize;
 
+  // Le header "Grille" (#grilleMainSection) est positionné en absolute en
+  // haut de .editor : il occupe visuellement de l'espace, mais comme .editor
+  // est en position relative, sa hauteur mesurée (containerRect.height) ne
+  // le prend pas en compte. On mesure donc sa hauteur réelle pour la
+  // déduire de l'espace vertical disponible, et décaler le centrage
+  // d'autant, afin que la grille reste toujours entièrement visible
+  // sous ce header et correctement centrée dans l'espace restant.
+  const headerEl = document.getElementById('grilleMainSection');
+  const headerHeight = headerEl ? headerEl.getBoundingClientRect().height : 0;
+
   const margin = 24;
   const availableWidth = Math.max(containerRect.width - margin * 2, 50);
-  const availableHeight = Math.max(containerRect.height - margin * 2, 50);
-  const autoScale = Math.min(availableWidth / gridPixelWidth, availableHeight / gridPixelHeight);
+  const availableHeight = Math.max(containerRect.height - headerHeight - margin * 2, 50);
+  const autoScale = Math.min(availableWidth / gridPixelWidth, availableHeight / gridPixelHeight) * AUTO_FIT_ZOOM_FACTOR;
   scale = Math.max(0.2, Math.min(autoScale, 2.5));
 
   pointX = (containerRect.width - (gridPixelWidth * scale)) / 2;
-  pointY = (containerRect.height - (gridPixelHeight * scale)) / 2;
+  pointY = headerHeight + (containerRect.height - headerHeight - (gridPixelHeight * scale)) / 2;
 
   if (setTransform) setTransform();
 }
@@ -270,8 +290,10 @@ function zoomStep(delta) {
   scale = delta > 0 ? Math.min(scale + delta, 2.5) : Math.max(scale + delta, 0.4);
 
   const rect = editorContainer.getBoundingClientRect();
+  const headerEl = document.getElementById('grilleMainSection');
+  const headerHeight = headerEl ? headerEl.getBoundingClientRect().height : 0;
   const centerX = rect.width / 2;
-  const centerY = rect.height / 2;
+  const centerY = headerHeight + (rect.height - headerHeight) / 2;
 
   pointX = centerX - (centerX - pointX) * (scale / prevScale);
   pointY = centerY - (centerY - pointY) * (scale / prevScale);
@@ -333,8 +355,8 @@ function findDuplicateWords() {
   const duplicateWordStrings = new Set();
 
   cells.forEach((cell, idx) => {
-    const processWord = (dir) => {
-      const data = getWordData(idx, dir);
+    const processWord = (dir, half) => {
+      const data = half ? getDoubleHalfWordData(idx, half, dir) : getWordData(idx, dir);
       if (data.indexes.length >= 2 && data.word && !data.word.includes("_")) {
         if (!wordCounts.has(data.word)) wordCounts.set(data.word, []);
         wordCounts.get(data.word).push(data.indexes);
@@ -342,8 +364,8 @@ function findDuplicateWords() {
     };
     if (cell.type === "definition") processWord(cell.arrow);
     else if (cell.type === "double") {
-      processWord((cell.top && cell.top.arrow) || "E");
-      processWord((cell.bottom && cell.bottom.arrow) || "S");
+      processWord((cell.top && cell.top.arrow) || "E", "top");
+      processWord((cell.bottom && cell.bottom.arrow) || "S", "bottom");
     }
   });
 
@@ -376,32 +398,106 @@ function getWordData(fromIndex, dir) {
   return { word, indexes };
 }
 
-function findParentWordForLetter(letterIdx, preferredDir = currentInputDir) {
-  const row = Math.floor(letterIdx / COLS);
-  const col = letterIdx % COLS;
+// Pour une case de double définition : la moitié HAUT commence toujours sur
+// la case adjacente à DROITE de la case double, et la moitié BAS commence
+// toujours sur la case adjacente en DESSOUS — quelle que soit l'orientation
+// de leur flèche. La flèche ne détermine que la direction dans laquelle le
+// mot se poursuit ENSUITE, à partir de cette case de départ fixe.
+function getDoubleHalfWordData(defIndex, half, dir) {
+  const offset = DIR_OFFSETS[dir];
+  if (!offset) return { word: "", indexes: [] };
 
-  function checkDir(dir) {
-    if (dir === "E") {
-      let c = col - 1; while (c >= 0 && cells[row * COLS + c].type === "letter") c--;
-      if (c >= 0) {
-        const defIdx = row * COLS + c; const defCell = cells[defIdx];
-        if (defCell.type === "definition" && defCell.arrow === "E") return { dir: "E", data: getWordData(defIdx, "E") };
-        if (defCell.type === "double" && ((defCell.top && defCell.top.arrow === "E") || (defCell.bottom && defCell.bottom.arrow === "E"))) return { dir: "E", data: getWordData(defIdx, "E") };
-      }
-    } else if (dir === "S") {
-      let r = row - 1; while (r >= 0 && cells[r * COLS + col].type === "letter") r--;
-      if (r >= 0) {
-        const defIdx = r * COLS + col; const defCell = cells[defIdx];
-        if (defCell.type === "definition" && defCell.arrow === "S") return { dir: "S", data: getWordData(defIdx, "S") };
-        if (defCell.type === "double" && ((defCell.top && defCell.top.arrow === "S") || (defCell.bottom && defCell.bottom.arrow === "S"))) return { dir: "S", data: getWordData(defIdx, "S") };
+  const defRow = Math.floor(defIndex / COLS);
+  const defCol = defIndex % COLS;
+  const anchorRow = half === "top" ? defRow : defRow + 1;
+  const anchorCol = half === "top" ? defCol + 1 : defCol;
+
+  if (anchorRow < 0 || anchorRow >= ROWS || anchorCol < 0 || anchorCol >= COLS) return { word: "", indexes: [] };
+  const anchorIdx = anchorRow * COLS + anchorCol;
+  if (cells[anchorIdx].type !== "letter") return { word: "", indexes: [] };
+
+  let word = cells[anchorIdx].letter ? cells[anchorIdx].letter.toUpperCase() : "_";
+  let indexes = [anchorIdx];
+  let r = anchorRow + offset.r; let c = anchorCol + offset.c;
+
+  while (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
+    const idx = r * COLS + c;
+    if (cells[idx].type !== "letter") break;
+    const char = cells[idx].letter ? cells[idx].letter.toUpperCase() : "_";
+    word += char; indexes.push(idx); r += offset.r; c += offset.c;
+  }
+  return { word, indexes };
+}
+
+function findParentWordForLetter(letterIdx, preferredDir = currentInputDir) {
+  function findMatch(dir) {
+    for (let i = 0; i < cells.length; i++) {
+      const c = cells[i];
+      if (c.type === "definition" && c.arrow === dir) {
+        const data = getWordData(i, dir);
+        if (data.indexes.includes(letterIdx)) return { dir, data };
+      } else if (c.type === "double") {
+        const topDir = (c.top && c.top.arrow) || "E";
+        const botDir = (c.bottom && c.bottom.arrow) || "S";
+        if (topDir === dir) {
+          const data = getDoubleHalfWordData(i, "top", dir);
+          if (data.indexes.includes(letterIdx)) return { dir, data };
+        }
+        if (botDir === dir) {
+          const data = getDoubleHalfWordData(i, "bottom", dir);
+          if (data.indexes.includes(letterIdx)) return { dir, data };
+        }
       }
     }
     return null;
   }
 
-  let result = checkDir(preferredDir);
+  let result = findMatch(preferredDir);
   if (result && result.data.indexes.length > 0) return result;
-  return checkDir(preferredDir === "E" ? "S" : "E");
+  return findMatch(preferredDir === "E" ? "S" : "E");
+}
+
+// Retourne TOUS les mots (horizontal et vertical) auxquels appartient une
+// case-lettre donnée — utile pour les cases situées à l'intersection d'une
+// définition horizontale (E) et d'une définition verticale (S), afin de
+// pouvoir sélectionner et afficher les deux mots simultanément plutôt
+// qu'un seul.
+function findAllParentWordsForLetter(letterIdx) {
+  const results = [];
+  ["E", "S"].forEach(dir => {
+    const match = findParentWordForLetter(letterIdx, dir);
+    if (match && match.dir === dir && match.data.indexes.length > 0) {
+      results.push(match);
+    }
+  });
+  return results;
+}
+
+// Détermine quelle case-lettre doit recevoir la priorité de direction quand
+// on clique sur la flèche d'une case définition (sur la grille) : la case
+// actuellement sélectionnée si elle appartient à ce mot, sinon la première
+// case de ce mot qui est effectivement une intersection (appartient aussi
+// à un mot dans l'autre direction).
+function prioritizeDirectionFromDefinitionArrow(defIndex, half, dir) {
+  const wordIndexes = half
+    ? getDoubleHalfWordData(defIndex, half, dir).indexes
+    : getWordData(defIndex, dir).indexes;
+  if (wordIndexes.length === 0) return;
+
+  let targetIndex = null;
+  if (selected !== null && wordIndexes.includes(selected) && cells[selected].type === "letter") {
+    targetIndex = selected;
+  } else {
+    targetIndex = wordIndexes.find(idx => cells[idx] && cells[idx].type === "letter" && findAllParentWordsForLetter(idx).length === 2);
+    if (targetIndex === undefined) targetIndex = null;
+  }
+  if (targetIndex === null) return;
+
+  cells[targetIndex].priorityDir = dir;
+  currentInputDir = dir;
+  selected = targetIndex;
+  markAsDirty();
+  render();
 }
 
 function getHighlightedCells() {
@@ -418,19 +514,33 @@ function getHighlightedCells() {
   if (cell.type === "double") {
     const topDir = (cell.top && cell.top.arrow) || "E";
     const botDir = (cell.bottom && cell.bottom.arrow) || "S";
-    const topIdx = getWordData(selected, topDir).indexes;
-    const botIdx = getWordData(selected, botDir).indexes;
+    const topIdx = getDoubleHalfWordData(selected, "top", topDir).indexes;
+    const botIdx = getDoubleHalfWordData(selected, "bottom", botDir).indexes;
     const all = Array.from(new Set([...topIdx, ...botIdx]));
-    console.log("[DEBUG double]", { selected, row: Math.floor(selected / COLS), col: selected % COLS, cellTop: cell.top, cellBottom: cell.bottom, topDir, botDir, topIdx, botIdx, all });
-    activeWordTarget = { direction: currentInputDir, indexes: currentInputDir === botDir ? botIdx : topIdx };
+
+    // La moitié active (haut ou bas) détermine le mot sélectionné, et c'est
+    // toujours l'orientation réelle de la flèche de CETTE moitié (topDir ou
+    // botDir) qui définit la direction de sélection — jamais une valeur
+    // supposée à l'avance selon que c'est "haut" ou "bas".
+    const useBottom = currentDoubleHalf === "bottom";
+    currentInputDir = useBottom ? botDir : topDir;
+    activeWordTarget = { direction: currentInputDir, indexes: useBottom ? botIdx : topIdx };
     return all;
   }
 
   if (cell.type === "letter") {
-    const parent = findParentWordForLetter(selected, currentInputDir);
-    if (parent && parent.data.indexes.length > 0) {
-      currentInputDir = parent.dir; activeWordTarget = { direction: parent.dir, indexes: parent.data.indexes };
-      return parent.data.indexes;
+    const parents = findAllParentWordsForLetter(selected);
+    if (parents.length > 0) {
+      // À une intersection (2 mots possibles), la priorité explicitement
+      // choisie par l'utilisateur pour CETTE case (cell.priorityDir) prime
+      // sur la direction courante — sinon on retombe sur currentInputDir,
+      // ou sur le premier mot trouvé par défaut.
+      const wantedDir = cell.priorityDir || currentInputDir;
+      const preferred = parents.find(p => p.dir === wantedDir) || parents[0];
+      currentInputDir = preferred.dir;
+      activeWordTarget = { direction: preferred.dir, indexes: preferred.data.indexes };
+      const all = Array.from(new Set(parents.flatMap(p => p.data.indexes)));
+      return all;
     }
   }
 
@@ -443,7 +553,6 @@ function updateHighlights() {
   const highlightedIndexes = getHighlightedCells();
   const combined = Array.from(new Set([...highlightedIndexes, ...hoveredWordIndexes]));
   const { duplicateIndexes } = findDuplicateWords();
-  console.log("[DEBUG updateHighlights]", { selected, highlightedIndexes, combined, gridChildrenCount: grid.children.length });
 
   Array.from(grid.children).forEach((el, idx) => {
     el.classList.toggle("word-highlighted", combined.includes(idx));
@@ -468,7 +577,7 @@ function moveToNextLetter(step) {
 function updateGridDisplay() {
   document.getElementById('gridNameDisplay').textContent = currentGridName;
   document.getElementById('printTitle').textContent = currentGridName;
-  document.getElementById('gridDimensionsDisplay').textContent = `Grille de ${COLS} colonnes × ${ROWS} lignes`;
+  document.getElementById('gridDimensionsDisplay').textContent = `${COLS}C × ${ROWS}L`;
 
   const grid = document.getElementById("grid");
 
@@ -563,6 +672,7 @@ function render() {
       editable.contentEditable = "true";
       editable.innerText = cell.definition;
       editable.addEventListener("focus", () => {
+        currentDoubleHalf = null;
         currentInputDir = cell.arrow;
         selectCellSilently(index);
       });
@@ -575,7 +685,15 @@ function render() {
       });
       el.appendChild(editable);
       const svg = createArrowElement(cell.arrow, "full");
-      if (svg) el.appendChild(svg);
+      if (svg) {
+        svg.style.cursor = "pointer";
+        svg.title = "Cliquer pour donner la priorité à ce mot en cas d'intersection";
+        svg.addEventListener("click", (e) => {
+          e.stopPropagation();
+          prioritizeDirectionFromDefinitionArrow(index, null, cell.arrow);
+        });
+        el.appendChild(svg);
+      }
     }
 
     if (cell.type === "double") {
@@ -587,14 +705,32 @@ function render() {
       editables[0].innerText = cell.top.definition;
       editables[1].innerText = cell.bottom.definition;
 
-      editables[0].addEventListener("focus", () => { currentInputDir = topDir; selectCellSilently(index); const sideInput = document.getElementById("topDefinitionInput"); if (sideInput) sideInput.value = cell.top.definition; });
-      editables[1].addEventListener("focus", () => { currentInputDir = botDir; selectCellSilently(index); const sideInput = document.getElementById("bottomDefinitionInput"); if (sideInput) sideInput.value = cell.bottom.definition; });
+      editables[0].addEventListener("focus", () => { currentDoubleHalf = "top"; currentInputDir = topDir; selectCellSilently(index); const sideInput = document.getElementById("topDefinitionInput"); if (sideInput) sideInput.value = cell.top.definition; });
+      editables[1].addEventListener("focus", () => { currentDoubleHalf = "bottom"; currentInputDir = botDir; selectCellSilently(index); const sideInput = document.getElementById("bottomDefinitionInput"); if (sideInput) sideInput.value = cell.bottom.definition; });
 
       editables[0].addEventListener("input", e => { cell.top.definition = e.target.innerText.toUpperCase(); const sideInput = document.getElementById("topDefinitionInput"); if (sideInput) sideInput.value = cell.top.definition; markAsDirty(); });
       editables[1].addEventListener("input", e => { cell.bottom.definition = e.target.innerText.toUpperCase(); const sideInput = document.getElementById("bottomDefinitionInput"); if (sideInput) sideInput.value = cell.bottom.definition; markAsDirty(); });
 
-      const svgTop = createArrowElement(topDir, "top"); if (svgTop) halves[0].appendChild(svgTop);
-      const svgBottom = createArrowElement(botDir, "bottom"); if (svgBottom) halves[1].appendChild(svgBottom);
+      const svgTop = createArrowElement(topDir, "top");
+      if (svgTop) {
+        svgTop.style.cursor = "pointer";
+        svgTop.title = "Cliquer pour donner la priorité à ce mot en cas d'intersection";
+        svgTop.addEventListener("click", (e) => {
+          e.stopPropagation();
+          prioritizeDirectionFromDefinitionArrow(index, "top", topDir);
+        });
+        halves[0].appendChild(svgTop);
+      }
+      const svgBottom = createArrowElement(botDir, "bottom");
+      if (svgBottom) {
+        svgBottom.style.cursor = "pointer";
+        svgBottom.title = "Cliquer pour donner la priorité à ce mot en cas d'intersection";
+        svgBottom.addEventListener("click", (e) => {
+          e.stopPropagation();
+          prioritizeDirectionFromDefinitionArrow(index, "bottom", botDir);
+        });
+        halves[1].appendChild(svgBottom);
+      }
     }
 
     el.dataset.index = index;
@@ -707,15 +843,17 @@ function updatePanel() {
     const botIcon = document.getElementById("bottomDefArrowIcon");
     if (botIcon) botIcon.textContent = botDir === "E" ? "arrow_right_alt" : "south";
 
-    const dataTop = getWordData(selected, topDir);
-    const dataBot = getWordData(selected, botDir);
+    const dataTop = getDoubleHalfWordData(selected, "top", topDir);
+    const dataBot = getDoubleHalfWordData(selected, "bottom", botDir);
     renderWordBox(wordContainer, "Mot du haut", dataTop.word, dataTop.indexes, "word-top", topDir);
     renderWordBox(wordContainer, "Mot du bas", dataBot.word, dataBot.indexes, "word-bot", botDir);
   }
 
   if (cell.type === "letter") {
-    const parent = findParentWordForLetter(selected, currentInputDir);
-    if (parent) renderWordBox(wordContainer, "Mot associé", parent.data.word, parent.data.indexes, "word-letter", parent.dir);
+    const parents = findAllParentWordsForLetter(selected);
+    parents.forEach(parent => {
+      renderWordBox(wordContainer, "Mot associé", parent.data.word, parent.data.indexes, `word-letter-${parent.dir}`, parent.dir, selected);
+    });
   }
 
 
@@ -725,8 +863,14 @@ function updatePanel() {
   const mysteryPosInput = document.getElementById("cellMysteryPosInput");
 
   if (cell.type === "letter") {
-    if (mysteryOptionsContainer) mysteryOptionsContainer.style.display = "block";
-    if (mysterySwitch) mysterySwitch.checked = !!cell.isMystery;
+    if (mysteryOptionsContainer) mysteryOptionsContainer.style.display = "none";
+    if (mysterySwitch) {
+      mysterySwitch.checked = !!cell.isMystery;
+      if (mysterySwitch.checked) {
+        mysteryOptionsContainer.style.display = "block";
+      }
+    }
+
     if (mysteryPosInput) {
       mysteryPosInput.value = cell.mysteryPosition || 1;
       mysteryPosInput.disabled = !cell.isMystery;
@@ -761,8 +905,8 @@ function updatePlacedWordsList() {
     } else if (cell.type === "double") {
       const topDir = (cell.top && cell.top.arrow) || "E";
       const botDir = (cell.bottom && cell.bottom.arrow) || "S";
-      const dataTop = getWordData(idx, topDir); if (dataTop.indexes.length >= 2 && dataTop.word && !dataTop.word.includes("_")) foundWordsMap.set(dataTop.indexes.join(","), { text: dataTop.word, indexes: dataTop.indexes });
-      const dataBot = getWordData(idx, botDir); if (dataBot.indexes.length >= 2 && dataBot.word && !dataBot.word.includes("_")) foundWordsMap.set(dataBot.indexes.join(","), { text: dataBot.word, indexes: dataBot.indexes });
+      const dataTop = getDoubleHalfWordData(idx, "top", topDir); if (dataTop.indexes.length >= 2 && dataTop.word && !dataTop.word.includes("_")) foundWordsMap.set(dataTop.indexes.join(","), { text: dataTop.word, indexes: dataTop.indexes });
+      const dataBot = getDoubleHalfWordData(idx, "bottom", botDir); if (dataBot.indexes.length >= 2 && dataBot.word && !dataBot.word.includes("_")) foundWordsMap.set(dataBot.indexes.join(","), { text: dataBot.word, indexes: dataBot.indexes });
     }
   });
 
@@ -808,12 +952,36 @@ function updatePlacedWordsList() {
   });
 }
 
-function renderWordBox(container, labelText, word, indexes, idPrefix, dir) {
+function renderWordBox(container, labelText, word, indexes, idPrefix, dir, priorityLetterIdx) {
   if (!indexes || indexes.length === 0) return;
   const box = document.createElement("div"); box.className = "word-box";
   const titleDiv = document.createElement("div"); titleDiv.className = "word-title";
   const labelSpan = document.createElement("span"); labelSpan.textContent = `${labelText} (${word.length} lettres)`; titleDiv.appendChild(labelSpan);
-  if (dir) { const iconSpan = document.createElement("span"); iconSpan.className = "material-symbols-outlined"; iconSpan.style.fontSize = "16px"; iconSpan.textContent = dir === "E" ? "arrow_right_alt" : "south"; titleDiv.appendChild(iconSpan); }
+  if (dir) {
+    const iconSpan = document.createElement("span");
+    iconSpan.className = "material-symbols-outlined";
+    iconSpan.style.fontSize = "16px";
+    iconSpan.textContent = dir === "E" ? "arrow_right_alt" : "south";
+
+    if (priorityLetterIdx !== undefined && priorityLetterIdx !== null) {
+      // Cas d'une case-lettre à l'intersection de deux mots : la flèche
+      // devient cliquable pour choisir la direction de remplissage
+      // prioritaire, et un badge violet indique celle actuellement active.
+      iconSpan.classList.add("priority-arrow-toggle");
+      if (dir === currentInputDir) iconSpan.classList.add("priority-arrow-active");
+      iconSpan.title = dir === "E"
+        ? "Donner la priorité au mot horizontal pour la saisie"
+        : "Donner la priorité au mot vertical pour la saisie";
+      iconSpan.addEventListener("click", (e) => {
+        e.stopPropagation();
+        cells[priorityLetterIdx].priorityDir = dir;
+        currentInputDir = dir;
+        markAsDirty();
+        render();
+      });
+    }
+    titleDiv.appendChild(iconSpan);
+  }
 
   if (labelText === "Mot formé" || labelText === "Mot associé" || labelText === "Mot du haut" || labelText === "Mot du bas") {
     const badge = document.createElement("span");
@@ -929,6 +1097,8 @@ function setHalfArrow(which, dir) {
   if (cell.type === "double") {
     if (!cell[which]) cell[which] = { definition: "", arrow: dir };
     else cell[which].arrow = dir;
+    currentDoubleHalf = which;
+    currentInputDir = dir;
     render();
 
   }
@@ -1313,7 +1483,7 @@ async function getSavedGrids() {
 
         let finalCols = grid.cols !== undefined ? parseInt(grid.cols, 10) : (gridContent.cols || 13);
         let finalRows = grid.rows !== undefined ? parseInt(grid.rows, 10) : (gridContent.rows || 18);
-        
+
         // --- CORRECTION : Déclaration explicite des variables pour chaque grille ---
         let finalCells = [];
         let finalMysteryConfig = { length: 9 };
@@ -2379,14 +2549,7 @@ function updateSaveBadge() {
   if (hasUnsavedChanges) {
     if (!badge) {
       badge = document.createElement('span');
-      badge.className = 'unsaved-badge';
-      badge.style.position = 'absolute';
-      badge.style.top = '4px';
-      badge.style.right = '4px';
-      badge.style.width = '8px';
-      badge.style.height = '8px';
-      badge.style.backgroundColor = '#f97316';
-      badge.style.borderRadius = '50%';
+      badge.className = 'unsaved-badge save-badge';
       saveBtn.style.position = 'relative';
       saveBtn.appendChild(badge);
     }
@@ -2434,10 +2597,15 @@ function updateMysteryWordDisplay() {
 }
 
 function toggleCellMystery(isChecked) {
+
+  let mysteryCellOptionsContainer = document.getElementById("mysteryCellOptionsContainer")
   if (selected === null) return;
   cells[selected].isMystery = isChecked;
 
   if (isChecked) {
+
+    mysteryCellOptionsContainer.style.display = "block"
+
     // Trouver la première position libre disponible
     const taken = getTakenMysteryPositions(selected);
     const maxLen = mysteryWordConfig.length || 9;
@@ -2450,6 +2618,8 @@ function toggleCellMystery(isChecked) {
       }
     }
     cells[selected].mysteryPosition = availablePos;
+  } else {
+    mysteryCellOptionsContainer.style.display = "none"
   }
 
   const posInput = document.getElementById("cellMysteryPosInput");
@@ -2596,7 +2766,7 @@ function renderCellMysteryPositionButtons(currentPos) {
   container.innerHTML = ''; // Nettoyer les anciens boutons
 
   const maxLen = mysteryWordConfig.length || 9;
-  
+
   // Récupérer l'ensemble des positions déjà prises par les *autres* cases mystères
   const takenPositions = getTakenMysteryPositions(selected);
 
@@ -2622,7 +2792,7 @@ function renderCellMysteryPositionButtons(currentPos) {
       } else {
         btn.style.backgroundColor = ''; // Couleur par défaut
       }
-      
+
       // Permettre le clic uniquement si la position n'est pas prise
       btn.onclick = () => {
         updateCellMysteryPosition(i);
