@@ -1,0 +1,230 @@
+@media (max-width: 1100px) {
+  [component="auth-modal"] #authModal input { font-size: 16px !important; }
+}
+
+[component="auth-modal"] button {
+  transition-behavior: normal;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+  transition-delay: 0s;
+  transition-property: background-color;
+}
+
+[component="auth-modal"] .modal-overlay {
+  backdrop-filter: blur(8px);
+  background-color: rgba(0, 0, 0, 0.4);
+  position: fixed !important;
+  top: 0px !important;
+  left: 0px !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  justify-content: center !important;
+  align-items: center !important;
+  z-index: 9999 !important;
+  transition-behavior: normal, normal !important;
+  transition-duration: 0.25s, 0.25s !important;
+  transition-timing-function: ease, ease !important;
+  transition-delay: 0s, 0s !important;
+  transition-property: opacity, visibility !important;
+}
+
+[component="auth-modal"] .modal-overlay.active {
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+[component="auth-modal"] .modal-overlay .modal-card {
+  transition-behavior: normal;
+  transition-duration: 0.25s;
+  transition-timing-function: ease;
+  transition-delay: 0s;
+  transition-property: transform;
+  background-image: initial;
+  background-position-x: initial;
+  background-position-y: initial;
+  background-size: initial;
+  background-repeat: initial;
+  background-attachment: initial;
+  background-origin: initial;
+  background-clip: initial;
+  background-color: white;
+  width: 380px;
+  max-width: 90%;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  border-bottom-right-radius: 16px;
+  border-bottom-left-radius: 16px;
+  box-shadow: rgba(0, 0, 0, 0.2) 0px 4px 20px, rgba(0, 0, 0, 0.1) 0px 0px 0px 11px;
+  border-top-width: 1px;
+  border-right-width: 1px;
+  border-bottom-width: 1px;
+  border-left-width: 1px;
+  border-top-style: solid;
+  border-right-style: solid;
+  border-bottom-style: solid;
+  border-left-style: solid;
+  border-top-color: rgba(0, 0, 0, 0.5);
+  border-right-color: rgba(0, 0, 0, 0.5);
+  border-bottom-color: rgba(0, 0, 0, 0.5);
+  border-left-color: rgba(0, 0, 0, 0.5);
+  border-image-source: none;
+  border-image-slice: 100%;
+  border-image-width: 1;
+  border-image-outset: 0;
+  border-image-repeat: stretch;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  animation-duration: 0.15s;
+  animation-timing-function: ease-out;
+  animation-delay: 0s;
+  animation-iteration-count: 1;
+  animation-direction: normal;
+  animation-fill-mode: none;
+  animation-play-state: running;
+  animation-name: fadeIn;
+  animation-timeline: auto;
+  animation-range-start: normal;
+  animation-range-end: normal;
+}
+
+[component="auth-modal"] .modal-overlay.active .modal-card {
+  transform: scale(1);
+}
+
+[component="auth-modal"] .auth-box {
+  padding-top: 30px;
+  padding-right: 30px;
+  padding-bottom: 30px;
+  padding-left: 30px;
+}
+
+[component="auth-modal"] .auth-tabs {
+  display: flex;
+  margin-bottom: 20px;
+  border-bottom-width: 2px;
+  border-bottom-style: solid;
+  border-bottom-color: rgb(238, 238, 238);
+}
+
+[component="auth-modal"] .auth-tabs button {
+  flex-grow: 1;
+  flex-shrink: 1;
+  flex-basis: 0%;
+  padding-top: 10px;
+  padding-right: 10px;
+  padding-bottom: 10px;
+  padding-left: 10px;
+  background-image: none;
+  background-position-x: initial;
+  background-position-y: initial;
+  background-size: initial;
+  background-repeat: initial;
+  background-attachment: initial;
+  background-origin: initial;
+  background-clip: initial;
+  background-color: initial;
+  border-top-width: medium;
+  border-right-width: medium;
+  border-bottom-width: medium;
+  border-left-width: medium;
+  border-top-style: none;
+  border-right-style: none;
+  border-bottom-style: none;
+  border-left-style: none;
+  border-top-color: currentcolor;
+  border-right-color: currentcolor;
+  border-bottom-color: currentcolor;
+  border-left-color: currentcolor;
+  border-image-source: none;
+  border-image-slice: 100%;
+  border-image-width: 1;
+  border-image-outset: 0;
+  border-image-repeat: stretch;
+  font-weight: bold;
+  cursor: pointer;
+  color: rgb(102, 102, 102);
+}
+
+[component="auth-modal"] .auth-tabs button.active {
+  color: var(--theme-color-strong);
+  margin-bottom: -2px;
+}
+
+[component="auth-modal"] .auth-form .form-group {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+[component="auth-modal"] .auth-form label {
+  color: rgb(51, 51, 51);
+}
+
+[component="auth-modal"] .login-btn {
+  margin-top: 20px;
+}
+
+[component="auth-modal"] .form-row {
+  display: flex;
+  row-gap: 10px;
+  column-gap: 10px;
+}
+
+[component="auth-modal"] .error-msg {
+  color: rgb(220, 53, 69);
+  font-size: 0.85rem;
+  margin-bottom: 10px;
+}
+
+[component="auth-modal"] .material-symbols-outlined {
+  vertical-align: middle;
+}
+
+[component="auth-modal"] label {
+  margin-top: 8px;
+  margin-right: 0px;
+  margin-left: 0px;
+}
+
+@keyframes fadeIn { 
+  0% { opacity: 0; transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+[component="auth-modal"] .form-group label {
+  display: block;
+  font-weight: bold;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+[component="auth-modal"] .form-group input {
+  width: 100%;
+  padding-top: 8px;
+  padding-right: 8px;
+  padding-bottom: 8px;
+  padding-left: 8px;
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+  border-bottom-right-radius: 5px;
+  border-bottom-left-radius: 5px;
+  font-size: 14px;
+}
+
+[component="auth-modal"] .btn-primary {
+  width: 100%;
+  color: var(--theme-color-strong);
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+  border-bottom-right-radius: 5px;
+  border-bottom-left-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+[component="auth-modal"] .btn-primary:hover { 
+  background: var(--theme-color-strong); 
+  color: white; 
+}

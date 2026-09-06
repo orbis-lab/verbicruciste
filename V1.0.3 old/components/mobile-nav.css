@@ -1,0 +1,57 @@
+
+
+@media (max-width: 1100px) {
+  [component="mobile-nav"] .mobile-section-nav { flex-shrink: 0; background: rgb(245, 245, 245); border-bottom: 1px solid rgb(221, 221, 221); display: flex !important; }
+  [component="mobile-nav"] .mobile-nav-btn { align-items: center; min-height: 44px; padding: 6px 4px; font-size: 11px; font-weight: 600; width: 100%; }
+  [component="mobile-nav"] .mobile-nav-btn .material-symbols-outlined { font-size: 20px; }
+}
+
+
+[component="mobile-nav"] button {
+  transition-behavior: normal;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+  transition-delay: 0s;
+  transition-property: background-color;
+}
+
+[component="mobile-nav"] .mobile-section-nav {
+  display: none;
+}
+
+[component="mobile-nav"] .mobile-nav-btn {
+  border-top-width: medium;
+  border-right-width: medium;
+  border-bottom-width: medium;
+  border-left-width: medium;
+  border-top-style: none;
+  border-right-style: none;
+  border-bottom-style: none;
+  border-left-style: none;
+  border-top-color: currentcolor;
+  border-right-color: currentcolor;
+  border-bottom-color: currentcolor;
+  border-left-color: currentcolor;
+  border-image-source: none;
+  border-image-slice: 100%;
+  border-image-width: 1;
+  border-image-outset: 0;
+  border-image-repeat: stretch;
+  background-image: initial;
+  background-position-x: initial;
+  background-position-y: initial;
+  background-size: initial;
+  background-repeat: initial;
+  background-attachment: initial;
+  background-origin: initial;
+  background-clip: initial;
+  background-color: white;
+  color: rgb(34, 34, 34);
+  cursor: pointer;
+}
+
+
+@media print {
+  [component="mobile-nav"] .mobile-section-nav { display: none !important; }
+}
+

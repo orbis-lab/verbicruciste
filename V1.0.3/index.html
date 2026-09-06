@@ -218,9 +218,9 @@
           </button>
 
           <div class="card-header">
-          <h1 class="main-section-tilte">
-            <span class="material-symbols-outlined main-section-icon">ink_selection</span>Sélection
-          </h1>
+            <h1 class="main-section-tilte">
+              <span class="material-symbols-outlined main-section-icon">ink_selection</span>Sélection
+            </h1>
 
           </div>
           <div class="section">
@@ -239,7 +239,7 @@
           </div>
 
           </h1>
-          <div class="section">
+          <div class="section" id="mysterySection" style="display: none;">
             <div style="display: flex; align-items: center; justify-content: space-between;">
               <h2 style="margin: 0;">Case "Mot mystère"</h2>
               <label class="toggle-switch" style="margin: 0;">
@@ -247,17 +247,48 @@
                 <span class="toggle-slider"></span>
               </label>
             </div>
-            
+
             <!-- Options de la case mystère (affichées conditionnellement) -->
             <div id="mysteryCellOptionsContainer" class="section-group"
               style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px; display: none;">
               <div>
-                <span id="mysteryPositionLabel" style="font-size: 13px; color: #666; display: block; margin-bottom: 6px;">Position dans le mot
+                <span id="mysteryPositionLabel"
+                  style="font-size: 13px; color: #666; display: block; margin-bottom: 6px;">Position dans le mot
                   :</span>
                 <div id="cellMysteryPosButtonsContainer" class="mystery-pos-buttons-container"></div>
               </div>
             </div>
           </div>
+
+
+
+
+
+          <div class="section" id="separatorOptionsContainer"  style="display: none;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <h2 style="margin: 0;">Séparateur de mot</h2>
+              <!-- Toggle Switch Slider -->
+              <label class="toggle-switch" style="margin: 0;">
+                <input type="checkbox" id="cellIsSeparatorSwitch" onchange="toggleCellSeparator(this.checked)">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div id="separatorDetailsContainer"
+              style="display: none; margin-top: 10px; padding-left: 12px; display: flex; flex-direction: column; gap: 6px;">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem;">
+                <input type="checkbox" id="cellBorderRightCheckbox" onchange="toggleCellBorderRight(this.checked)">
+                Bordure droite
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem;">
+                <input type="checkbox" id="cellBorderBottomCheckbox" onchange="toggleCellBorderBottom(this.checked)">
+                Bordure en bas
+              </label>
+            </div>
+          </div>
+
+
+
 
           <div class="section">
             <h2>Options</h2>
@@ -333,7 +364,7 @@
             Grille
           </h1>
           <div id="gridNameDisplay" class="grid-name-display">Ma Grille</div>
-          <div id="gridDimensionsDisplay">13C × 18L</div>
+          <div id="gridDimensionsDisplay">13C × 17L</div>
 
         </div>
 
@@ -406,9 +437,9 @@
 
           <div class="words-sidebar ">
             <div class="card-header">
-            <h1 class="main-section-tilte">
-              <span class="material-symbols-outlined main-section-icon">list_alt</span>Mots placés
-            </h1>
+              <h1 class="main-section-tilte">
+                <span class="material-symbols-outlined main-section-icon">list_alt</span>Mots placés
+              </h1>
             </div>
             <div id="wordsCount" class="count-info">0 mot trouvé</div>
             <div id="wordsList" class="words-list"></div>
@@ -500,8 +531,7 @@
 
         <div class="form-group id-card" style="margin-bottom: 12px;">
           <!-- Ajout de l'avatar utilisateur -->
-          <div id="userAvatarDisplay"
-            class="avatar">
+          <div id="userAvatarDisplay" class="avatar">
 
           </div>
           <label>Nom d'utilisateur</label>

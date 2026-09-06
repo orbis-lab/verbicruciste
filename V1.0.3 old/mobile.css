@@ -12,7 +12,7 @@
    l'emportent naturellement et n'en ont pas besoin.
    ========================================================================== */
 
-@media screen and (max-width: 1100px) {
+@media (max-width: 1100px) {
 
   /* --- App plein écran, sans défilement de la page ---------------------- */
   /* Verrouille le fond pour empêcher le scroll global de la page mobile */
@@ -36,6 +36,11 @@
   }
 
   #authModal input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
   aside input,
   textarea,
   select {
@@ -224,10 +229,6 @@
     overflow: hidden !important;
   }
 
-  main {
-    height: auto !important;
-  }
-
   #openKeyboardBtn {
     display: inline-flex;
   }
@@ -311,3 +312,4 @@
 
   
 }
+

@@ -1,0 +1,46 @@
+
+[component="app-loader"] .app-loader {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgb(244, 246, 248);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 99999;
+  transition-behavior: normal, normal;
+  transition-duration: 0.5s, 0.5s;
+  transition-timing-function: ease, ease;
+  transition-delay: 0s, 0s;
+  transition-property: opacity, visibility;
+}
+
+[component="app-loader"] .app-loader.fade-out {
+  opacity: 0;
+  visibility: hidden;
+}
+
+[component="app-loader"] .loader-content {
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+[component="app-loader"] .loader-logo {
+  max-width: 280px;
+  height: auto;
+  animation-duration: 1.5s;
+  animation-timing-function: ease-in-out;
+  animation-delay: 0s;
+  animation-iteration-count: infinite;
+  animation-direction: normal;
+  animation-fill-mode: none;
+  animation-play-state: running;
+  animation-name: pulseLogo;
+  animation-timeline: auto;
+  animation-range-start: normal;
+  animation-range-end: normal;
+}

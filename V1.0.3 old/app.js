@@ -2,17 +2,15 @@
 /* 1. VARIABLES GLOBALES ET ÉTAT DE L'APPLICATION                    */
 /* ===================================================================== */
 
-/* --- Grille : données et état de la grille en cours d'édition --------- */
 let currentGridId = null;
-let currentGridName = "Ma Grille";
 let COLS = 13;
 let ROWS = 17;
-let cells = [];
+let currentGridName = "Ma Grille";
 let isCreatingNewGrid = false;
 let sessionRestorePending = false;
 let pendingSessionData = null;
 
-/* --- Sélection, direction de saisie et navigation dans les mots ------- */
+let cells = [];
 let selected = null;
 let activeWordTarget = null;
 let hoveredWordIndexes = [];
@@ -28,7 +26,6 @@ const DIR_OFFSETS = {
   E: { r: 0, c: 1 }
 };
 
-/* --- Zoom, centrage et pan de la grille (souris + tactile) ------------ */
 let panzoomInstance = null;
 // Facteur appliqué à l'échelle calculée automatiquement au chargement (et au
 // clic sur "Zoom initial") : 1 = ajustement exact à l'espace disponible,
@@ -40,20 +37,20 @@ let pointX = 50;
 let pointY = 40;
 let isPanning = false;
 let startX = 0, startY = 0;
+
 let hasMoved = false;
 let clickStartX = 0;
 let clickStartY = 0;
+let USER = {};
+
 let initialTouchDistance = null;
 let setTransform = null;
-
-/* --- Session utilisateur, interface et état de sauvegarde -------------- */
-let USER = {};
 let isSaveAsMode = false;
 let openSectionId = null;
+
 let hasUnsavedChanges = false;
 let openedFromStartup = false; // Indique si le modal secondaire vient du démarrage
 
-/* --- Mot mystère -------------------------------------------------------- */
 let mysteryWordConfig = {
   length: 9,
   // Stocke la correspondance : { cellIndex: positionIndex } ou persistance liée aux cases
@@ -913,6 +910,10 @@ function createArrowElement(dir, zone) {
   return img;
 }
 
+function createArrowSVG(dir, zone) {
+  return createArrowElement(dir, zone);
+}
+
 function updatePanel() {
   document.querySelectorAll(".type-buttons button").forEach(btn => {
     btn.classList.toggle("active", selected !== null && btn.dataset.type === cells[selected].type);
@@ -1010,6 +1011,7 @@ function updatePanel() {
   // 4. Gestion conditionnelle de la section « Case mot mystère » (uniquement pour les cases lettres)
   const mysteryOptionsContainer = document.getElementById("mysteryCellOptionsContainer");
   const mysterySwitch = document.getElementById("cellIsMysterySwitch");
+  const mysteryPosInput = document.getElementById("cellMysteryPosInput");
   const mysterySectionContainer = mysterySwitch ? (mysterySwitch.closest('.option-section') || mysterySwitch.parentElement) : null;
 
   if (cell.type === "letter") {
@@ -1020,6 +1022,13 @@ function updatePanel() {
 
     if (mysteryOptionsContainer) {
       mysteryOptionsContainer.style.display = cell.isMystery ? "block" : "none";
+    }
+
+    if (mysteryPosInput) {
+      mysteryPosInput.value = cell.mysteryPosition || 1;
+      mysteryPosInput.disabled = !cell.isMystery;
+      mysteryPosInput.max = mysteryWordConfig.length || 9;
+      mysteryPosInput.min = 1;
     }
 
     if (cell.isMystery) {
@@ -1176,7 +1185,7 @@ function renderWordBox(container, labelText, word, indexes, idPrefix, dir, prior
   const synBtn = document.createElement("button");
   synBtn.className = "word-action-btn";
   synBtn.innerHTML = `<span class="material-symbols-outlined float-r">sync_alt</span> Synonymes`;
-  synBtn.onclick = () => fetchSynonyms(word, indexes, `${idPrefix}-syn`);
+  synBtn.onclick = () => fetchSynonyms(word, `${idPrefix}-syn`);
   box.appendChild(synBtn);
 
   const synBox = document.createElement("div");
@@ -1303,6 +1312,25 @@ function getCellRowCol(index) {
   };
 }
 
+function setCellType(type) {
+  if (selected === null) return;
+  const cell = cells[selected];
+  cell.type = type;
+
+  if (type === "double" || type === "definition") {
+    const { row, col } = getCellRowCol(selected);
+    if (row === 0) {
+      cell.arrow = "S";
+    } else if (col === 0) {
+      cell.arrow = "E";
+    } else if (!cell.arrow) {
+      cell.arrow = "E";
+    }
+  }
+  render();
+  markAsDirty();
+}
+
 function setArrow(dir) {
   if (selected === null) return;
   const cell = cells[selected];
@@ -1384,7 +1412,7 @@ async function fetchSpellCorrection(word, indexes, resultContainerId) {
   }
 }
 
-async function fetchSynonyms(word, indexes, resultContainerId) {
+async function fetchSynonyms(word, resultContainerId) {
   const container = document.getElementById(resultContainerId);
   if (!container) return;
   container.innerHTML = "<span style='font-size:11px;color:#666'>Recherche de synonymes...</span>";
@@ -1459,7 +1487,9 @@ async function fetchSynonyms(word, indexes, resultContainerId) {
       const wUpper = item.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
       tag.textContent = wUpper;
-      tag.onclick = () => fillWordInGrid(wUpper, indexes);
+      tag.onclick = () => {
+        console.log("Synonyme sélectionné :", wUpper);
+      };
 
       container.appendChild(tag);
     });
@@ -1679,6 +1709,7 @@ function saveGridToCloud(gridData) {
         if (data.id) {
           currentGridId = data.id;
         }
+        console.log("Grille sauvegardée dans le cloud avec succès !");
       } else {
         showCustomAlert("Erreur : " + (data.error || "Impossible de sauvegarder la grille."));
       }
@@ -2055,7 +2086,25 @@ function setTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   document.documentElement.classList.toggle("dark-theme", theme === "dark");
 
+  updateThemeMenuUI();
+  const menu = document.getElementById("themeMenu");
+  if (menu) menu.classList.remove("active");
+
   changeUserTheme(theme);
+}
+
+function updateThemeMenuUI() {
+  const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+  document.querySelectorAll(".theme-menu-item").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.theme === currentTheme);
+  });
+}
+
+function toggleThemeMenu(event) {
+  event.stopPropagation();
+  const menu = document.getElementById("themeMenu");
+  if (menu) menu.classList.toggle("active");
+  updateThemeMenuUI();
 }
 
 async function changeUserTheme(newTheme) {
@@ -2690,6 +2739,14 @@ function toggleCellMystery(isChecked) {
     mysteryCellOptionsContainer.style.display = "none";
   }
 
+  const posInput = document.getElementById("cellMysteryPosInput");
+  if (posInput) {
+    posInput.value = cells[selected].mysteryPosition || 1;
+    posInput.disabled = !isChecked;
+    posInput.max = mysteryWordConfig.length || 9;
+    posInput.min = 1;
+  }
+
   updatePanel();
   updateMysteryWordDisplay();
   render();
@@ -2753,10 +2810,20 @@ function updateCellMysteryPosition(posValue) {
   const takenPositions = getTakenMysteryPositions(selected);
   if (takenPositions.has(pos)) {
     showCustomAlert(`La position ${pos} est déjà utilisée par une autre lettre du mot mystère.`);
+
+    const posInput = document.getElementById("cellMysteryPosInput");
+    if (posInput) {
+      posInput.value = cells[selected].mysteryPosition || 1;
+    }
     return;
   }
 
   cells[selected].mysteryPosition = pos;
+
+  const posInput = document.getElementById("cellMysteryPosInput");
+  if (posInput && parseInt(posInput.value, 10) !== pos) {
+    posInput.value = pos;
+  }
 
   updateMysteryWordDisplay();
   render();
@@ -2802,6 +2869,13 @@ function renderCellMysteryPositionButtons(currentPos) {
 
     container.appendChild(btn);
   }
+}
+
+function selectCellMysteryPosition(pos) {
+  if (typeof updateCellMysteryPosition === 'function') {
+    updateCellMysteryPosition(pos);
+  }
+  renderCellMysteryPositionButtons(pos);
 }
 
 function toggleCellSeparator(isChecked) {
