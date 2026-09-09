@@ -86,7 +86,7 @@ class GridController {
                 $userId
             ]);
 
-            echo json_encode(['success' => true, 'message' => 'Grille mise à jour']);
+            echo json_encode(['success' => true, 'id' => $id, 'message' => 'Grille mise à jour']);
         } catch (PDOException $e) {
             if ($e->getCode() == '23000' || strpos($e->getMessage(), '1062 Duplicate entry') !== false) {
                 http_response_code(400);

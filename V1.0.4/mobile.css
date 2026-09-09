@@ -12,7 +12,7 @@
    l'emportent naturellement et n'en ont pas besoin.
    ========================================================================== */
 
-@media (max-width: 1100px) {
+@media screen and (max-width: 1100px) {
 
   /* --- App plein écran, sans défilement de la page ---------------------- */
   /* Verrouille le fond pour empêcher le scroll global de la page mobile */
@@ -36,11 +36,6 @@
   }
 
   #authModal input,
-  textarea,
-  select {
-    font-size: 16px !important;
-  }
-
   aside input,
   textarea,
   select {
@@ -116,6 +111,11 @@
   }
 
   /* --- Toolbar = tiroir latéral ouvert depuis la gauche ------------------ */
+
+
+  #ToolbarContainer{
+    display: contents;
+  }
   .topbar {
     position: fixed !important;
     top: 0;
@@ -187,7 +187,7 @@
     width: 100%;
   }
 
-  .mobile-menu-backdrop.active {
+  .mobile-backdrop.active {
     display: block !important;
     position: fixed;
     inset: 0;
@@ -227,6 +227,10 @@
     padding: 10px !important;
     gap: 0 !important;
     overflow: hidden !important;
+  }
+
+  main {
+    height: auto !important;
   }
 
   #openKeyboardBtn {
@@ -293,13 +297,7 @@
     top: 10px;
   }
 
-  .mobile-section-backdrop.active {
-    display: block !important;
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.45);
-    z-index: 849;
-  }
+ 
 
   aside.right .inner-aside {
     margin-right: 10px;
@@ -312,4 +310,3 @@
 
   
 }
-

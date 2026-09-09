@@ -374,11 +374,11 @@ header {
 /* ===================================================================== */
 
 /* Topbar centrée d'actions & Tooltips personnalisés */
-.topbar-container {
+/* .topbar-container {
     display: flex;
     justify-content: center;
     align-items: center;
-}
+} */
 
 .topbar {
     display: flex;
@@ -447,8 +447,7 @@ html.dark-theme {
 
 /* Fond assombri commun aux tiroirs/modals mobiles (menu burger et modals
      de section Sélection/Grille/Mots), masqué sur desktop. */
-.mobile-menu-backdrop,
-.mobile-section-backdrop {
+.mobile-backdrop {
     display: none;
 }
 

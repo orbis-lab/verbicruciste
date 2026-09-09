@@ -7,22 +7,6 @@
 @import url("./mobile.css");
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
 
-@import url("./components/app-loader.css");
-@import url("./components/aside-left.css");
-@import url("./components/aside-right.css");
-@import url("./components/auth-modal.css");
-@import url("./components/header.css");
-@import url("./components/editor.css");
-@import url("./components/api-loader.css");
-@import url("./components/mobile-menu-backdrop.css");
-@import url("./components/mobile-section-backdrop.css");
-@import url("./components/mobile-nav.css");
-@import url("./components/modal.css");
-@import url("./components/editor.css");
-
-@font-face { font-family: "Material Symbols Outlined"; font-style: normal; font-weight: 100 700; src: url("https://fonts.gstatic.com/s/materialsymbolsoutlined/v369/kJEhBvYX7BgnkSrUwT8OhrdQw4oELdPIeeII9v6oFsI.woff2") format("woff2"); }
-
-
 /* ===================================================================== */
 /* 1. VARIABLES / CONFIGURATION GLOBALE                                  */
 /* ===================================================================== */
@@ -38,37 +22,19 @@
     --danger-color-medium: #cc6868;
     --blue: #eaf3ff;
     --panel: #f5f5f5;
+}
+
+:root {
     font-family: "Outfit", sans-serif;
     font-optical-sizing: auto;
     font-weight: 500;
     font-style: normal;
 }
 
-
-
-
-.material-symbols-outlined {
-  font-family: "Material Symbols Outlined";
-  font-weight: normal;
-  font-style: normal;
-  line-height: 1;
-  letter-spacing: normal;
-  text-transform: none;
-  display: inline-block;
-  white-space-collapse: collapse;
-  text-wrap-mode: nowrap;
-  overflow-wrap: normal;
-  direction: ltr;
-  -webkit-font-smoothing: antialiased;
-}
-
-
-
 *,
 *::before,
 *::after {
     font-family: "Outfit", sans-serif;
-    box-sizing: border-box;
 }
 
 button {
@@ -105,6 +71,11 @@ button {
     background: #999;
 }
 
+
+* {
+    box-sizing: border-box;
+}
+
 /* ===================================================================== */
 /* 3. BODY ET STRUCTURE PRINCIPALE                                       */
 /* ===================================================================== */
@@ -114,34 +85,6 @@ body {
     background: #eee;
     color: #222;
 }
-
-
-.app {
-    display: flex;
-    gap: 18px;
-    padding: 18px;
-    align-items: flex-start;
-}
-
-
-main {
-    height: calc(100vh - 100px);
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /* Styles pour le loader API */
 .api-loader-overlay {
@@ -298,9 +241,10 @@ main {
 
 .auth-form input {
     padding: 10px;
+    border: 1px solid #ccc;
     border-radius: 4px;
     font-size: 1rem;
-    border: solid 1px var(--theme-color-strong); /* Fusionné (propriété border dupliquée) */
+    border: solid 1px var(--theme-color-strong);
 }
 
 .login-btn {
@@ -330,11 +274,6 @@ main {
     margin-bottom: 25px !important;
 }
 
-.user-menu-container {
-    position: relative;
-    display: inline-block;
-}
-
 .avatar {
     width: 64px;
     height: 64px;
@@ -347,31 +286,6 @@ main {
     color: #ffffff;
     margin-bottom: 16px;
     background-color: #1976d2;
-}
-
-.dropdown-content {
-    position: absolute;
-    right: 0;
-    background-color: #fff;
-    min-width: 150px;
-    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
-    z-index: 1000;
-}
-
-.dropdown-content button {
-    width: 100%;
-    padding: 10px;
-    text-align: left;
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: #333;
-}
-
-.dropdown-content button:hover {
-    background-color: #f1f1f1;
-    color: #dc3545;
 }
 
 /* Style du loader de démarrage */
@@ -460,11 +374,11 @@ header {
 /* ===================================================================== */
 
 /* Topbar centrée d'actions & Tooltips personnalisés */
-.topbar-container {
+/* .topbar-container {
     display: flex;
     justify-content: center;
     align-items: center;
-}
+} */
 
 .topbar {
     display: flex;
@@ -494,59 +408,6 @@ html.dark-theme {
     html.dark-theme {
         filter: none !important;
     }
-}
-
-/* Sélecteur de thème (icône "palette" + menu déroulant clair/sombre) */
-.theme-selector-wrapper {
-    position: relative;
-    display: inline-flex;
-}
-
-.theme-menu {
-    display: none;
-    position: absolute;
-    top: calc(100% + 8px);
-    left: 50%;
-    transform: translateX(-50%);
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-    overflow: hidden;
-    z-index: 300;
-    min-width: 170px;
-}
-
-.theme-menu.active {
-    display: block;
-}
-
-.theme-menu-item {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 14px;
-    border: none;
-    background: white;
-    color: #222;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    text-align: left;
-}
-
-.theme-menu-item:hover {
-    background: #eaf3ff;
-    color: #1166dd;
-}
-
-.theme-menu-item.active {
-    background: #222;
-    color: white;
-}
-
-.theme-menu-item .material-symbols-outlined {
-    font-size: 18px;
 }
 
 /* Bouton de fermeture des panneaux latéraux (aside) affichés en modal sur
@@ -586,8 +447,7 @@ html.dark-theme {
 
 /* Fond assombri commun aux tiroirs/modals mobiles (menu burger et modals
      de section Sélection/Grille/Mots), masqué sur desktop. */
-.mobile-menu-backdrop,
-.mobile-section-backdrop {
+.mobile-backdrop {
     display: none;
 }
 
@@ -613,6 +473,7 @@ html.dark-theme {
     justify-content: center;
     /* width: 100px; */
     border: solid 1px var(--theme-color-strong);
+    text-align: center;
     height: 30px;
     border-radius: 50px;
     padding: 5px 15px;
@@ -700,7 +561,12 @@ html.dark-theme {
 /* 6. MISE EN PAGE PRINCIPALE (ASIDE GAUCHE / ÉDITEUR / ASIDE DROITE)    */
 /* ===================================================================== */
 
-
+.app {
+    display: flex;
+    gap: 18px;
+    padding: 18px;
+    align-items: flex-start;
+}
 
 aside {
     width: 320px;
@@ -732,7 +598,9 @@ aside.right .inner-aside {
     direction: rtl;
 }
 
-
+main {
+    height: calc(100vh - 100px);
+}
 
 .main-section {
     width: 100%;
@@ -873,21 +741,24 @@ aside.right .inner-aside {
 
 
 .editor {
+    background: white;
     padding: 18px;
+    border-radius: 10px;
     box-shadow: 0 2px 10px #0002;
+    overflow: auto;
     flex: 1;
     min-width: 0;
+    position: relative;
     /* Indispensable pour que le translate du JS se cale bien ici */
     /* Empêche le navigateur (notamment Safari/iOS) de gérer nativement les
          gestes tactiles (pan / pincement) sur cette zone, afin que notre
          propre gestion JS du zoom/déplacement tactile prenne seule la main. */
     touch-action: none;
     background-color: #ffffff;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.4'%3E%3Cpath opacity='.5' d='M96 95h4v1h-4v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9zm-1 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9z'/%3E%3Cpath d='M6 5V0H5v5H0v1h5v94h1V6h94V5H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.4'%3E%3Cpath opacity='.5' d='M96 95h4v1h-4v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9zm-1 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9z'/%3E%3Cpath d='M6 5V0H5v5H0v1h5v94h1V6h94V5H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
     border: solid white 5px;
     overflow: hidden;
     position: relative;
-    border-radius: 10px; /* Fusionné (propriété border-radius dupliquée) */
 }
 
 .zoom-badge {
@@ -1930,20 +1801,6 @@ textarea {
 
 
 
-.grid-title {
-    display: flex;
-    border-bottom: solid 1px;
-    margin-bottom: 10px;
-    padding-bottom: 0px;
-}
-
-.grid-title h1 {
-    border-bottom: none;
-    margin-bottom: none;
-}
-
-
-
 .float-r {
     float: right;
 }
@@ -1955,12 +1812,6 @@ textarea {
 /* ===================================================================== */
 /* MOT MYSTÈRE                                                           */
 /* ===================================================================== */
-
-.mystery-word-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
 
 .mystery-word-display {
     direction: ltr;
@@ -1974,33 +1825,6 @@ textarea {
     margin-top: 10px;
     text-align: center;
 }
-
-.mystery-switch-group {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid #eee;
-}
-
-.mystery-position-input-group {
-    margin-top: 8px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.mystery-position-input-group input {
-    width: 70px;
-    padding: 4px 8px;
-    font-size: 13px;
-    text-align: center;
-    border: 1px solid var(--theme-color-strong);
-    border-radius: 4px;
-}
-
-
 
 .mystery-setting-icon {
     /* font-size: 20px !important; */
@@ -2098,6 +1922,18 @@ textarea {
     border-color: var(--danger-color-strong);
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
 #grilleMainSection {
     display: flex;
     position: absolute;
@@ -2116,9 +1952,11 @@ textarea {
     border: none;
     padding: none;
     margin: none;
+
 }
 
 #grilleMainSection .card-header {
+
     margin: 10px;
     margin-bottom: 0px;
 }
