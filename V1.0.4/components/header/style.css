@@ -1,0 +1,120 @@
+
+/* ===================================================================== */
+/* 4. HEADER / NAVIGATION                                                */
+/* ===================================================================== */
+
+header {
+    background: #222;
+    color: white;
+    padding: 10px 10px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 20px;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+}
+
+.header-logo {
+    height: 40px;
+    width: auto;
+    display: block;
+    filter: invert(1);
+}
+
+.header-title-logo {
+    display: none;
+}
+
+.burger-btn {
+    display: none;
+    border: none;
+    background: transparent;
+    color: white;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+}
+
+.burger-btn .material-symbols-outlined {
+    font-size: 40px;
+}
+
+
+
+
+@media screen and (max-width: 1100px) {
+
+    /* --- Logo mobile -------------------------------------------------------
+     Le bandeau horizontal est remplacé par le logo carré pour libérer de
+     l'espace dans l'en-tête sur les petits écrans. */
+    .header-logo {
+        content: url("./media/logo.svg");
+        width: 40px !important;
+        height: 40px !important;
+        object-fit: contain;
+    }
+
+    /* --- Nom de l'application centré dans le header ------------------------ */
+    .header-title-logo {
+        display: block !important;
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: min(48vw, 220px);
+        height: auto;
+        max-height: 32px;
+        object-fit: contain;
+        filter: invert(1);
+        pointer-events: none;
+    }
+
+    /* --- Header sur une seule ligne : burger à gauche, logo à droite ------- */
+    header {
+        flex-shrink: 0;
+        position: sticky !important;
+        top: 0;
+        z-index: 850;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        max-height: 50px;
+    }
+
+    /* Le burger passe avant le logo visuellement (via `order`), quel que soit
+     l'ordre réel des éléments dans le DOM. */
+    .burger-btn {
+        display: flex !important;
+        order: 1;
+    }
+
+    .header-left {
+        order: 2;
+    }
+
+    /* La toolbar n'apparaît plus directement dans le header : elle devient un
+     tiroir plein écran ouvert/fermé par le bouton burger (voir plus bas). Le
+     conteneur intermédiaire ne doit donc plus réserver de place dans la
+     ligne du header. */
+
+
+    /* Colonne vide (3ᵉ colonne de la grille CSS desktop) : inutile sur mobile. */
+    header>div:empty {
+        display: none !important;
+    }
+
+    /* --- Toolbar = tiroir latéral ouvert depuis la gauche ------------------ */
+
+
+    #ToolbarContainer {
+        display: contents;
+    }
+}
+

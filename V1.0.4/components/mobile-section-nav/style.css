@@ -1,0 +1,47 @@
+/* Barre de navigation mobile (Sélection / Grille / Mots), affichée sous le
+     header et au-dessus de la grille. Masquée sur desktop où ces sections
+     restent visibles en permanence dans les panneaux latéraux. */
+.mobile-section-nav {
+    display: none;
+}
+
+.mobile-nav-btn {
+    border: none;
+    background: white;
+    color: #222;
+    cursor: pointer;
+}
+
+
+
+
+
+@media screen and (max-width: 1100px) {
+
+    
+
+ /* --- Barre de navigation Sélection / Grille / Mots --------------------- */
+  .mobile-section-nav {
+    display: flex !important;
+    flex-shrink: 0;
+    background: #f5f5f5;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .mobile-nav-btn {
+    align-items: center;
+    min-height: 44px;
+    padding: 6px 4px;
+    font-size: 11px;
+    font-weight: 600;
+    width: 100%;
+  }
+
+  .mobile-nav-btn .material-symbols-outlined {
+    font-size: 20px;
+  }
+
+  
+}
+
+
