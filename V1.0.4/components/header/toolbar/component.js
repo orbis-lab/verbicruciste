@@ -84,4 +84,27 @@ export default class Toolbar extends BaseComponent {
 
 
     }
+
+    // Affiche/masque le badge "modifications non enregistrées" sur le
+    // bouton Enregistrer. Rapatrié depuis App : c'est au composant qui
+    // possède le bouton de gérer son propre badge.
+    updateSaveBadge(hasUnsavedChanges) {
+        const saveBtn = document.getElementById('saveGridBtn');
+        if (!saveBtn) return;
+
+        let badge = saveBtn.querySelector('.unsaved-badge');
+
+        if (hasUnsavedChanges) {
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'unsaved-badge save-badge';
+                saveBtn.style.position = 'relative';
+                saveBtn.appendChild(badge);
+            }
+        } else {
+            if (badge) {
+                badge.remove();
+            }
+        }
+    }
 }

@@ -1,0 +1,28 @@
+.words-sidebar {
+    display: flex;
+    flex-direction: column;
+}
+
+.words-sidebar h2 {
+    font-size: 15px;
+    margin: 0 0 4px 0;
+    text-transform: uppercase;
+    color: #222;
+}
+
+.words-sidebar .count-info {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 12px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 6px;
+}
+
+.words-list {
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-right: 4px;
+}

@@ -4,6 +4,9 @@ import Header from "./components/header/component.js";
 import MobileSectionNav from "./components/mobile-section-nav/component.js";
 import ZoomControls from "./components/zoom-controls/component.js";
 import InteractiveScreen from "./components/interactive-screen/component.js";
+import MysteryWordSection from "./components/mystery-word-section/component.js";
+import WordListSection from "./components/word-list-section/component.js";
+
 
 class App {
   constructor() {
@@ -91,8 +94,7 @@ class App {
   initEventListener() {
     // Dictionnaire centralisé : ID -> [event, handler]
     const eventsConfig = {
-      //'burgerBtn': ['click', (e) => this.toggleMobileMenu(e)],
-      'openMysterySettingsBtn': ['click', () => this.state.ui.components.InteractiveScreen.Modals.open("mystery")],
+      
       'fileInput': ['change', (e) => this.importJSON(e)],
 
       // ------------------------------------------------------------------------------------------------
@@ -118,8 +120,6 @@ class App {
       // Mobile Action ----------------------------------------------------------------------------------
       'mobileBackdrop': ['click', () => { this.closeMobileMenu(); this.closeAllSectionModals(); }],
       'selectionCloseModalBtn': ['click', () => this.closeAllSectionModals()],
-      'mysteryCloseModalBtn': ['click', () => this.closeAllSectionModals()],
-      'wordCloseModalBtn': ['click', () => this.closeAllSectionModals()]
     };
 
     // La boucle se simplifie également avec la déstructuration de tableau [event, handler]
@@ -137,12 +137,16 @@ class App {
     this.state.ui.components.MobileSectionNav = new MobileSectionNav(this, "#MobileSectionNav")
     this.state.ui.components.ZoomControls = new ZoomControls(this, "#ZoomControls")
     this.state.ui.components.InteractiveScreen = new InteractiveScreen(this, "#InteractiveScreen")
+    this.state.ui.components.mysteryWordSection = new MysteryWordSection(this, "#MysteryWordSection")
+    this.state.ui.components.wordListSection = new WordListSection(this, "#WordListSection")
 
     await Promise.all([
       this.state.ui.components.Header.ready,
       this.state.ui.components.MobileSectionNav.ready,
       this.state.ui.components.ZoomControls.ready,
-      this.state.ui.components.InteractiveScreen.ready
+      this.state.ui.components.InteractiveScreen.ready,
+      this.state.ui.components.mysteryWordSection.ready,
+      this.state.ui.components.wordListSection.ready
 
     ]);
   }
@@ -723,7 +727,7 @@ class App {
 
     this.render();
     this.updateGridGeometry();
-    this.updateMysteryWordDisplay();
+    this.state.ui.components.mysteryWordSection.updateDisplay();
   }
 
   render() {
@@ -791,7 +795,7 @@ class App {
             cell.letter = "";
             input.value = "";
             this.updatePanel();
-            this.updatePlacedWordsList();
+            this.state.ui.components.wordListSection.updateDisplay();
             this.moveToNextLetter(-1);
           } else if (e.key.length === 1 && /[a-zA-ZÀ-ÿ]/.test(e.key)) {
             e.preventDefault();
@@ -799,9 +803,9 @@ class App {
             cell.letter = char;
             input.value = char;
             this.updatePanel();
-            this.updatePlacedWordsList();
+            this.state.ui.components.wordListSection.updateDisplay();
             this.markAsDirty();
-            this.updateMysteryWordDisplay();
+            this.state.ui.components.mysteryWordSection.updateDisplay();
             this.moveToNextLetter(1);
           }
         });
@@ -893,9 +897,9 @@ class App {
     });
 
     this.updatePanel();
-    this.updatePlacedWordsList();
+    this.state.ui.components.wordListSection.updateDisplay();
     this.markAsDirty();
-    this.updateMysteryWordDisplay();
+    this.state.ui.components.mysteryWordSection.updateDisplay();
     this.updateGridArrowHighlights();
   }
 
@@ -1051,65 +1055,7 @@ class App {
     }
   }
 
-  updatePlacedWordsList() {
-    const wordsListEl = document.getElementById("wordsList");
-    const wordsCountEl = document.getElementById("wordsCount");
-    if (!wordsListEl || !wordsCountEl) return;
-
-    const foundWordsMap = new Map();
-    this.state.grid.cells.forEach((cell, idx) => {
-      if (cell.type === "definition") {
-        const data = this.getWordData(idx, cell.arrow);
-        if (data.indexes.length >= 2 && data.word && !data.word.includes("_")) foundWordsMap.set(data.indexes.join(","), { text: data.word, indexes: data.indexes });
-      } else if (cell.type === "double") {
-        const topDir = (cell.top && cell.top.arrow) || "E";
-        const botDir = (cell.bottom && cell.bottom.arrow) || "S";
-        const dataTop = this.getDoubleHalfWordData(idx, "top", topDir); if (dataTop.indexes.length >= 2 && dataTop.word && !dataTop.word.includes("_")) foundWordsMap.set(dataTop.indexes.join(","), { text: dataTop.word, indexes: dataTop.indexes });
-        const dataBot = this.getDoubleHalfWordData(idx, "bottom", botDir); if (dataBot.indexes.length >= 2 && dataBot.word && !dataBot.word.includes("_")) foundWordsMap.set(dataBot.indexes.join(","), { text: dataBot.word, indexes: dataBot.indexes });
-      }
-    });
-
-    const wordsArray = Array.from(foundWordsMap.values());
-    const { duplicateWordStrings } = this.findDuplicateWords();
-
-    wordsCountEl.textContent = `${wordsArray.length} mot${wordsArray.length > 1 ? 's' : ''} trouvé${wordsArray.length > 1 ? 's' : ''}`;
-    wordsListEl.innerHTML = "";
-
-    if (wordsArray.length === 0) {
-      wordsListEl.innerHTML = "<div style='font-size:12px;color:#888;font-style:italic;'>Aucun mot dans la grille</div>";
-      return;
-    }
-
-    const groupedByLength = {};
-    wordsArray.forEach(item => { const len = item.text.length; if (!groupedByLength[len]) groupedByLength[len] = []; groupedByLength[len].push(item); });
-    const sortedLengths = Object.keys(groupedByLength).map(Number).sort((a, b) => a - b);
-
-    sortedLengths.forEach(len => {
-      const groupDiv = document.createElement("div");
-      groupDiv.className = "word-group";
-      const titleDiv = document.createElement("div");
-      titleDiv.className = "word-group-title";
-      titleDiv.textContent = `${len} lettres :`;
-      groupDiv.appendChild(titleDiv);
-
-      groupedByLength[len].sort((a, b) => a.text.localeCompare(b.text, 'fr'));
-
-      groupedByLength[len].forEach(item => {
-        const wordEl = document.createElement("div");
-        wordEl.className = "word-item";
-        wordEl.textContent = item.text;
-        if (duplicateWordStrings.has(item.text)) {
-          wordEl.classList.add("is-duplicate");
-          wordEl.title = "Mot présent plusieurs fois !";
-        }
-        wordEl.addEventListener("mouseenter", () => { this.state.navigation.hoveredWordIndexes = item.indexes; this.updateHighlights(); });
-        wordEl.addEventListener("mouseleave", () => { this.state.navigation.hoveredWordIndexes = []; this.updateHighlights(); });
-        wordEl.addEventListener("click", () => { if (item.indexes.length > 0) this.selectCellAndFocus(item.indexes[0]); });
-        groupDiv.appendChild(wordEl);
-      });
-      wordsListEl.appendChild(groupDiv);
-    });
-  }
+ 
 
   renderWordBox(container, labelText, word, indexes, idPrefix, dir, priorityLetterIdx) {
     if (!indexes || indexes.length === 0) return;
@@ -1794,7 +1740,7 @@ class App {
       this.state.ui.openedFromStartup = false;
 
       this.updateGridDisplay();
-      this.updateMysteryWordDisplay();
+      this.state.ui.components.mysteryWordSection.updateDisplay();
       this.updateGridGeometry();
       this.markAsClean();
       this.state.ui.components.InteractiveScreen.Modals.close()
@@ -1825,7 +1771,7 @@ class App {
         this.state.navigation.selected = null;
         this.state.ui.openedFromStartup = false;
         this.updateGridDisplay();
-        this.updateMysteryWordDisplay();
+        this.state.ui.components.mysteryWordSection.updateDisplay();
       } catch (err) {
         this.showCustomAlert("Fichier JSON invalide.");
       }
@@ -2153,81 +2099,21 @@ class App {
 
   async openLoadModal() {
 
-
     // Ouvre la modale principale
     await this.state.ui.components.InteractiveScreen.Modals.open("open");
 
-    // Récupération de la div #gridList cible
-    const gridList = document.getElementById("gridList");
-
-    if (!gridList) return;
-
-    // Nettoyage préalable de la liste
-    gridList.innerHTML = "";
-
     const savedGrids = await this.getSavedGrids();
-    const names = savedGrids ? Object.keys(savedGrids) : [];
 
-
-
-    if (names.length === 0) {
-      gridList.innerHTML = "<div class='modal-empty'>Aucune grille sauvegardée dans le cloud pour le moment.</div>";
-    } else {
-
-
-
-      // Ajout dynamique de chaque ligne de grille
-      names.forEach(name => {
-        const gridInfo = savedGrids[name];
-        const gridId = gridInfo.id || null;
-
-        const isOpen = (name === this.state.grid.name) || (gridId && this.state.grid.id && gridId === this.state.grid.id);
-
-        const row = document.createElement("div");
-        row.className = "grid-item-row";
-        if (isOpen) {
-          row.classList.add("current-grid");
-        }
-
-        const nameSpan = document.createElement("span");
-        nameSpan.className = "grid-item-name";
-        nameSpan.textContent = name;
-
-        if (isOpen) {
-          nameSpan.style.pointerEvents = "none";
-          nameSpan.title = "Grille actuellement ouverte";
-
-          const badge = document.createElement("span");
-          badge.textContent = " (Ouverte)";
-          badge.style.fontSize = "12px";
-          badge.style.color = "#666";
-          badge.style.fontStyle = "italic";
-          nameSpan.appendChild(badge);
-        } else {
-          nameSpan.onclick = () => this.loadSelectedGrid(name);
-        }
-
-        const delBtn = document.createElement("button");
-        delBtn.className = "grid-item-delete";
-        delBtn.title = isOpen ? "Impossible de supprimer la grille ouverte" : "Supprimer";
-        delBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size:17px;">delete</span>`;
-
-        if (isOpen) {
-          delBtn.disabled = true;
-          delBtn.style.cursor = "not-allowed";
-          delBtn.style.pointerEvents = "none";
-        } else {
-          delBtn.onclick = (e) => {
-            e.stopPropagation();
-            this.deleteSavedGrid(name, gridId);
-          };
-        }
-
-        row.appendChild(nameSpan);
-        row.appendChild(delBtn);
-        gridList.appendChild(row);
-      });
-    }
+    // Le rendu de la liste appartient désormais au composant OpenUI
+    // lui-même, qui possède son propre DOM (#gridList).
+    this.state.ui.components.InteractiveScreen.Modals.UI.renderGridList(
+      savedGrids,
+      this.state.grid,
+      {
+        onSelect: (name) => this.loadSelectedGrid(name),
+        onDelete: (name, gridId) => this.deleteSavedGrid(name, gridId)
+      }
+    );
   }
 
   loadFileInput() {
@@ -2302,23 +2188,7 @@ class App {
 
 
   updateSaveBadge() {
-    const saveBtn = document.getElementById('saveBtn');
-    if (!saveBtn) return;
-
-    let badge = saveBtn.querySelector('.unsaved-badge');
-
-    if (this.state.ui.hasUnsavedChanges) {
-      if (!badge) {
-        badge = document.createElement('span');
-        badge.className = 'unsaved-badge save-badge';
-        saveBtn.style.position = 'relative';
-        saveBtn.appendChild(badge);
-      }
-    } else {
-      if (badge) {
-        badge.remove();
-      }
-    }
+    this.state.ui.components.Header.toolbar.updateSaveBadge(this.state.ui.hasUnsavedChanges);
   }
 
   markAsDirty() {
@@ -2335,25 +2205,7 @@ class App {
     }
   }
 
-  updateMysteryWordDisplay() {
-    const displayEl = document.getElementById("mysteryWordDisplay");
-    if (!displayEl) return;
 
-    const len = this.state.grid.mysteryWordConfig.length || 9;
-    let wordArr = Array(len).fill("_");
-
-    this.state.grid.cells.forEach((cell) => {
-      if (cell.isMystery && cell.mysteryPosition) {
-        const pos = parseInt(cell.mysteryPosition, 10) - 1;
-        if (pos >= 0 && pos < len) {
-          const letter = cell.letter ? cell.letter.toUpperCase() : "_";
-          wordArr[pos] = letter !== "" ? letter : "_";
-        }
-      }
-    });
-
-    displayEl.textContent = wordArr.join(" ");
-  }
 
   toggleCellMystery(isChecked) {
     let mysteryCellOptionsContainer = document.getElementById("mysteryCellOptionsContainer");
@@ -2379,7 +2231,7 @@ class App {
     }
 
     this.updatePanel();
-    this.updateMysteryWordDisplay();
+    this.state.ui.components.mysteryWordSection.updateDisplay();
     this.render();
     this.markAsDirty();
   }
@@ -2393,7 +2245,7 @@ class App {
       if (newLen >= 1 && newLen <= 30) {
         this.state.grid.mysteryWordConfig.length = newLen;
         this.state.ui.components.InteractiveScreen.Modals.close()
-        this.updateMysteryWordDisplay();
+        this.state.ui.components.mysteryWordSection.updateDisplay();
         this.markAsDirty();
       } else {
         this.showCustomAlert("Veuillez entrer une longueur valide entre 1 et 30.");
@@ -2430,7 +2282,7 @@ class App {
 
     this.state.grid.cells[this.state.navigation.selected].mysteryPosition = pos;
 
-    this.updateMysteryWordDisplay();
+    this.state.ui.components.mysteryWordSection.updateDisplay();
     this.render();
     this.markAsDirty();
 

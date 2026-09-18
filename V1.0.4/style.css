@@ -411,34 +411,6 @@ main {
 /* ===================================================================== */
 
 
-.words-sidebar {
-    display: flex;
-    flex-direction: column;
-}
-
-.words-sidebar h2 {
-    font-size: 15px;
-    margin: 0 0 4px 0;
-    text-transform: uppercase;
-    color: #222;
-}
-
-.words-sidebar .count-info {
-    font-size: 12px;
-    color: #666;
-    margin-bottom: 12px;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 6px;
-}
-
-.words-list {
-    overflow-y: auto;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding-right: 4px;
-}
 
 
 
@@ -461,51 +433,6 @@ main {
     border: solid white 5px;
     overflow: hidden;
     position: relative;
-}
-
-.zoom-badge {
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(4px);
-    border: 1px solid #ddd;
-    border-radius: 50px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 6px;
-
-}
-
-.zoom-btn {
-    background: transparent;
-    border: none;
-    color: #333;
-    border-radius: 6px;
-    width: 32px;
-    height: 32px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.15s ease, color 0.15s ease;
-}
-
-.zoom-btn:hover {
-    background: #eaf3ff;
-    color: #1166dd;
-}
-
-.zoom-btn .material-symbols-outlined {
-    font-size: 20px;
-}
-
-.zoom-level {
-    font-size: 12px;
-    font-weight: bold;
-    color: #444;
-    min-width: 42px;
-    text-align: center;
-    user-select: none;
 }
 
 
@@ -1269,26 +1196,6 @@ textarea {
 /* MOT MYSTÈRE                                                           */
 /* ===================================================================== */
 
-.mystery-word-display {
-    direction: ltr;
-    font-size: 20px;
-    font-weight: bold;
-    letter-spacing: 3px;
-    color: #111;
-    word-break: break-all;
-    border-radius: 6px;
-    padding: 10px;
-    margin-top: 10px;
-    text-align: center;
-}
-
-.mystery-setting-icon {
-    /* font-size: 20px !important; */
-    color: var(--theme-color-strong);
-    border: solid 1px;
-    border-radius: 5px;
-    background: var(--theme-color-light);
-}
 
 
 /* Style du Toggle Switch (Version compacte) */
